@@ -1863,20 +1863,33 @@ class NaturalHairBusinessManager {
         const quickActionsBtn = document.getElementById('quickActionsBtn');
         const settingsBtn = document.getElementById('settingsBtn');
         
+        // Sidebar dropdown buttons
+        const sidebarNotificationBtn = document.getElementById('sidebarNotificationBtn');
+        const sidebarSettingsBtn = document.getElementById('sidebarSettingsBtn');
+        
         const notificationDropdown = document.getElementById('notificationDropdown');
         const quickActionsDropdown = document.getElementById('quickActionsDropdown');
         const settingsDropdown = document.getElementById('settingsDropdown');
         
         // Close dropdowns when clicking outside
         document.addEventListener('click', (e) => {
-            if (!e.target.closest('.header-actions')) {
+            if (!e.target.closest('.header-actions') && !e.target.closest('.sidebar')) {
                 this.closeAllDropdowns();
             }
         });
         
-        // Notification button
+        // Notification button (header)
         if (notificationBtn) {
             notificationBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.toggleDropdown('notification');
+                this.loadNotifications();
+            });
+        }
+        
+        // Sidebar notification button
+        if (sidebarNotificationBtn) {
+            sidebarNotificationBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
                 this.toggleDropdown('notification');
                 this.loadNotifications();
@@ -1891,12 +1904,31 @@ class NaturalHairBusinessManager {
             });
         }
         
-        // Settings button
+        // Settings button (header)
         if (settingsBtn) {
             settingsBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
                 this.toggleDropdown('settings');
                 this.loadSettings();
+            });
+        }
+        
+        // Sidebar settings button
+        if (sidebarSettingsBtn) {
+            sidebarSettingsBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.toggleDropdown('settings');
+                this.loadSettings();
+            });
+        }
+        
+        // Delete button in settings dropdown
+        const deleteDataBtn = document.getElementById('deleteDataBtn');
+        if (deleteDataBtn) {
+            deleteDataBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.clearAllData();
+                this.closeAllDropdowns();
             });
         }
         
@@ -4675,4 +4707,23 @@ function navigateToSection(sectionName) {
     setTimeout(() => {
         console.log('Navigation completed to:', sectionName);
     }, 300);
+}
+
+// Mobile dropdown toggle functions
+function toggleNotifications() {
+    console.log('Toggle notifications from mobile sidebar');
+    if (window.dashboardApp && typeof window.dashboardApp.toggleDropdown === 'function') {
+        window.dashboardApp.toggleDropdown('notification');
+        window.dashboardApp.loadNotifications();
+    }
+    closeMobileSidebar();
+}
+
+function toggleSettings() {
+    console.log('Toggle settings from mobile sidebar');
+    if (window.dashboardApp && typeof window.dashboardApp.toggleDropdown === 'function') {
+        window.dashboardApp.toggleDropdown('settings');
+        window.dashboardApp.loadSettings();
+    }
+    closeMobileSidebar();
 }
