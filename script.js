@@ -2858,25 +2858,29 @@ class NaturalHairBusinessManager {
         const sales = JSON.parse(localStorage.getItem('jmonic_sales') || '[]');
         const products = JSON.parse(localStorage.getItem('jmonic_products') || '[]');
         
+        console.log('Transaction Log Debug:', { transactions, sales: sales.length, products: products.length });
+        
         let allTransactions = [...transactions];
         
         // Add sales as transactions
         sales.forEach(sale => {
+            console.log('Processing sale:', sale);
             if (sale.products && Array.isArray(sale.products)) {
-                sale.products.forEach(product => {
-                    const productData = products.find(p => p.id == product.id);
-                    const productName = product.name || (productData ? productData.name : `Product ID: ${product.id}`);
-                    const currentStock = productData ? (productData.stock_quantity || 0) : 0;
-                    const quantity = parseInt(product.quantity) || 0;
+                sale.products.forEach(saleProduct => {
+                    const productData = products.find(p => p.id == saleProduct.id || p.id == saleProduct.product_id);
+                    const productName = saleProduct.name || saleProduct.product_name || (productData ? productData.name : `Unknown Product`);
+                    const currentStock = productData ? (productData.stock_quantity || productData.quantity || 0) : 0;
+                    const quantity = parseInt(saleProduct.quantity) || 0;
+                    const saleDate = sale.date || sale.created_at || sale.timestamp || new Date().toISOString();
                     
                     allTransactions.push({
-                        timestamp: sale.date || sale.created_at,
+                        timestamp: saleDate,
                         product: productName,
                         type: 'sale',
                         quantity: -quantity,
                         previousStock: currentStock + quantity,
                         newStock: currentStock,
-                        reference: `Sale #${sale.id}`
+                        reference: `Sale #${sale.id || 'Unknown'}`
                     });
                 });
             }
@@ -2904,19 +2908,37 @@ class NaturalHairBusinessManager {
         }
         
         tbody.innerHTML = allTransactions.slice(0, 50).map(transaction => {
-            const date = new Date(transaction.timestamp);
-            const typeClass = this.getTransactionTypeClass(transaction.type);
-            const quantityClass = transaction.quantity > 0 ? 'positive' : 'negative';
+            console.log('Rendering transaction:', transaction);
+            
+            // Safe date handling
+            let displayDate = 'Invalid Date';
+            try {
+                const date = new Date(transaction.timestamp);
+                if (!isNaN(date.getTime())) {
+                    displayDate = date.toLocaleString();
+                }
+            } catch (e) {
+                console.error('Date parsing error:', e, transaction.timestamp);
+            }
+            
+            const productName = transaction.product || 'Unknown Product';
+            const transactionType = transaction.type || 'unknown';
+            const typeClass = this.getTransactionTypeClass(transactionType);
+            const quantity = transaction.quantity !== undefined && transaction.quantity !== null ? transaction.quantity : 0;
+            const quantityClass = quantity > 0 ? 'positive' : 'negative';
+            const previousStock = transaction.previousStock !== undefined && transaction.previousStock !== null ? transaction.previousStock : 'N/A';
+            const newStock = transaction.newStock !== undefined && transaction.newStock !== null ? transaction.newStock : 'N/A';
+            const reference = transaction.reference || 'No Reference';
             
             return `
                 <tr>
-                    <td>${date.toLocaleString()}</td>
-                    <td>${transaction.product}</td>
-                    <td><span class="transaction-type ${typeClass}">${transaction.type.toUpperCase()}</span></td>
-                    <td><span class="quantity ${quantityClass}">${transaction.quantity > 0 ? '+' : ''}${transaction.quantity}</span></td>
-                    <td>${transaction.previousStock !== null ? transaction.previousStock : '-'}</td>
-                    <td>${transaction.newStock !== null ? transaction.newStock : '-'}</td>
-                    <td>${transaction.reference || '-'}</td>
+                    <td>${displayDate}</td>
+                    <td>${productName}</td>
+                    <td><span class="transaction-type ${typeClass}">${transactionType.toUpperCase()}</span></td>
+                    <td><span class="quantity ${quantityClass}">${quantity > 0 ? '+' : ''}${quantity}</span></td>
+                    <td>${previousStock}</td>
+                    <td>${newStock}</td>
+                    <td>${reference}</td>
                 </tr>
             `;
         }).join('');
