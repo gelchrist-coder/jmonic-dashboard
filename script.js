@@ -4899,6 +4899,140 @@ function resetToDefaults() {
     showNotification('Settings reset to defaults', 'success');
 }
 
+// Delete Data Functions
+function showDeleteConfirmation() {
+    // Remove existing modal if any
+    const existingModal = document.querySelector('.delete-confirmation-overlay');
+    if (existingModal) {
+        existingModal.remove();
+    }
+    
+    // Create delete confirmation modal
+    const modal = document.createElement('div');
+    modal.className = 'delete-confirmation-overlay';
+    modal.innerHTML = `
+        <div class="delete-confirmation-modal">
+            <div class="delete-confirmation-icon">
+                <i class="fas fa-exclamation-triangle"></i>
+            </div>
+            <h3>Delete All Data</h3>
+            <p>This action will permanently delete all your business data including:</p>
+            <ul>
+                <li>All products and inventory</li>
+                <li>Sales history and transactions</li>
+                <li>Revenue analytics data</li>
+                <li>System settings and preferences</li>
+            </ul>
+            <p><strong>This action cannot be undone!</strong></p>
+            <div class="delete-confirmation-actions">
+                <button class="btn btn-danger" onclick="deleteAllData()">
+                    <i class="fas fa-trash"></i> Yes, Delete Everything
+                </button>
+                <button class="btn btn-secondary" onclick="closeDeleteConfirmation()">
+                    <i class="fas fa-times"></i> Cancel
+                </button>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+}
+
+function closeDeleteConfirmation() {
+    const modal = document.querySelector('.delete-confirmation-overlay');
+    if (modal) {
+        modal.remove();
+    }
+}
+
+function deleteAllData() {
+    // Clear all localStorage data
+    const keysToDelete = [
+        'jmonic_products',
+        'jmonic_sales',
+        'jmonic_inventory_transactions',
+        'jmonic_settings',
+        'accessSettings',
+        'systemSettings'
+    ];
+    
+    keysToDelete.forEach(key => {
+        localStorage.removeItem(key);
+    });
+    
+    // Close the modal
+    closeDeleteConfirmation();
+    
+    // Show success notification
+    showNotification('All data has been deleted successfully', 'success');
+    
+    // Reload the page to reset everything
+    setTimeout(() => {
+        window.location.reload();
+    }, 2000);
+}
+
+// Notification Functions
+function markAllAsRead(type) {
+    const notifications = document.querySelectorAll(`#${type}Alerts .notification-item`);
+    notifications.forEach(notification => {
+        notification.classList.remove('unread');
+    });
+    
+    showNotification(`All ${type} notifications marked as read`, 'success');
+}
+
+function clearActivity() {
+    const activityList = document.getElementById('activityAlerts');
+    if (activityList) {
+        activityList.innerHTML = '<div class="empty-state">No recent activity</div>';
+        showNotification('Activity history cleared', 'success');
+    }
+}
+
+function addNotification(type, title, message, isUnread = true) {
+    const containerId = type + 'Alerts';
+    const container = document.getElementById(containerId);
+    
+    if (!container) return;
+    
+    const notification = document.createElement('div');
+    notification.className = `notification-item ${isUnread ? 'unread' : ''}`;
+    
+    let iconClass = '';
+    let iconType = '';
+    
+    switch (type) {
+        case 'stock':
+            iconClass = 'fas fa-exclamation-triangle';
+            iconType = 'warning';
+            break;
+        case 'system':
+            iconClass = 'fas fa-info-circle';
+            iconType = 'info';
+            break;
+        case 'activity':
+            iconClass = 'fas fa-check-circle';
+            iconType = 'success';
+            break;
+    }
+    
+    notification.innerHTML = `
+        <div class="notification-icon ${iconType}">
+            <i class="${iconClass}"></i>
+        </div>
+        <div class="notification-content">
+            <h4>${title}</h4>
+            <p>${message}</p>
+            <small>Just now</small>
+        </div>
+        ${type === 'stock' ? '<button class="notification-action" onclick="navigateToSection(\'inventory\')"><i class="fas fa-eye"></i></button>' : ''}
+    `;
+    
+    // Add to the beginning of the list
+    container.insertBefore(notification, container.firstChild);
+}
+
 // Initialize settings when page loads
 document.addEventListener('DOMContentLoaded', function() {
     // Load settings if on settings page
@@ -4914,4 +5048,20 @@ document.addEventListener('DOMContentLoaded', function() {
         // Initialize navigation access
         updateNavigationAccess();
     }
+    
+    // Load existing notifications
+    loadNotifications();
 });
+
+function loadNotifications() {
+    // Load low stock notifications
+    const products = JSON.parse(localStorage.getItem('jmonic_products')) || [];
+    const lowStockProducts = products.filter(product => 
+        parseInt(product.currentStock || product.quantity || 0) <= parseInt(product.reorderLevel || 5)
+    );
+    
+    if (lowStockProducts.length > 0) {
+        addNotification('stock', 'Low Stock Alert', 
+            `${lowStockProducts.length} product(s) are running low on stock`, true);
+    }
+}
