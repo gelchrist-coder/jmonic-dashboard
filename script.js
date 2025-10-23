@@ -4677,6 +4677,17 @@ function navigateToSection(sectionName) {
         }
     });
     
+    // Update active states in desktop sidebar
+    const desktopMenuItems = document.querySelectorAll('.sidebar-menu li');
+    desktopMenuItems.forEach(item => {
+        const link = item.querySelector('a');
+        if (link && link.getAttribute('data-section') === sectionName) {
+            item.classList.add('active');
+        } else {
+            item.classList.remove('active');
+        }
+    });
+    
     // Update active states in bottom navigation
     const bottomNavItems = document.querySelectorAll('.sidebar.mobile .nav-item');
     bottomNavItems.forEach(item => {
@@ -4690,6 +4701,16 @@ function navigateToSection(sectionName) {
     // Show the selected section
     if (typeof showSection === 'function') {
         showSection(sectionName);
+    } else {
+        console.warn('showSection function not found, falling back to basic section switching');
+        // Fallback section switching
+        document.querySelectorAll('.content-section').forEach(section => {
+            section.classList.remove('active');
+        });
+        const targetSection = document.getElementById(sectionName);
+        if (targetSection) {
+            targetSection.classList.add('active');
+        }
     }
     
     // Small delay to ensure smooth transition
@@ -4698,126 +4719,10 @@ function navigateToSection(sectionName) {
     }, 300);
 }
 
-// Access Control Functions
-function getDefaultAccessSettings() {
-    return {
-        products: false,
-        sales: false,
-        revenue: false,
-        inventory: false,
-        reports: false
-    };
-}
-
-function loadAccessSettings() {
-    const settings = JSON.parse(localStorage.getItem('accessSettings')) || getDefaultAccessSettings();
-    
-    // Update toggle switches
-    document.getElementById('allowProducts').checked = settings.products;
-    document.getElementById('allowSales').checked = settings.sales;
-    document.getElementById('allowRevenue').checked = settings.revenue;
-    document.getElementById('allowInventory').checked = settings.inventory;
-    document.getElementById('allowReports').checked = settings.reports;
-    
-    return settings;
-}
-
-function updateAccessSetting(section, enabled) {
-    const settings = JSON.parse(localStorage.getItem('accessSettings')) || getDefaultAccessSettings();
-    settings[section] = enabled;
-    localStorage.setItem('accessSettings', JSON.stringify(settings));
-    
-    // Update navigation UI
-    updateNavigationAccess();
-    
-    // Show notification
-    const sectionName = section.charAt(0).toUpperCase() + section.slice(1);
-    const status = enabled ? 'enabled' : 'disabled';
-    showNotification(`${sectionName} access ${status} for employees`, 'success');
-}
-
-function updateNavigationAccess() {
-    const currentRole = document.getElementById('userRole').value;
-    const settings = JSON.parse(localStorage.getItem('accessSettings')) || getDefaultAccessSettings();
-    
-    if (currentRole === 'employee') {
-        // Update restricted items based on settings
-        const restrictedItems = document.querySelectorAll('.restricted-item');
-        restrictedItems.forEach(item => {
-            const link = item.querySelector('a');
-            const section = link.getAttribute('data-section');
-            
-            if (settings[section]) {
-                item.classList.remove('locked');
-                const lockIcon = item.querySelector('.access-lock');
-                if (lockIcon) lockIcon.style.display = 'none';
-            } else {
-                item.classList.add('locked');
-                const lockIcon = item.querySelector('.access-lock');
-                if (lockIcon) lockIcon.style.display = 'inline';
-            }
-        });
-    }
-}
-
-function checkAccess(section) {
-    const currentRole = document.getElementById('userRole').value;
-    
-    if (currentRole === 'admin') {
-        navigateToSection(section);
-        return true;
-    }
-    
-    // Check if admin has enabled access for this section
-    const accessSettings = JSON.parse(localStorage.getItem('accessSettings')) || getDefaultAccessSettings();
-    const sectionKey = section === 'revenue' ? 'revenue' : section;
-    
-    if (accessSettings[sectionKey]) {
-        navigateToSection(section);
-        return true;
-    }
-    
-    // Show access denied modal for employees
-    showAccessDenied();
-    return false;
-}
-
-function showAccessDenied() {
-    // Remove existing modal if any
-    const existingModal = document.querySelector('.access-denied-overlay');
-    if (existingModal) {
-        existingModal.remove();
-    }
-    
-    // Create access denied modal
-    const modal = document.createElement('div');
-    modal.className = 'access-denied-overlay';
-    modal.innerHTML = `
-        <div class="access-denied-modal">
-            <div class="access-denied-icon">
-                <i class="fas fa-lock"></i>
-            </div>
-            <h3>Access Denied</h3>
-            <p>You don't have permission to access this section. Contact your administrator if you need access.</p>
-            <button onclick="closeAccessDenied()">OK</button>
-        </div>
-    `;
-    
-    document.body.appendChild(modal);
-}
-
-function closeAccessDenied() {
-    const modal = document.querySelector('.access-denied-overlay');
-    if (modal) {
-        modal.remove();
-    }
-}
-
+// User Role Management (Simplified)
 function updateUserAccess() {
     const currentRole = document.getElementById('userRole').value;
     console.log('User role changed to:', currentRole);
-    
-    updateNavigationAccess();
     
     // Show appropriate message
     if (currentRole === 'admin') {
@@ -4845,56 +4750,54 @@ function updateSystemSetting(setting, value) {
 
 function loadSystemSettings() {
     const settings = JSON.parse(localStorage.getItem('systemSettings')) || {
-        notifications: true,
-        autoRefresh: true,
-        lowStockAlerts: true
+        theme: 'light',
+        currency: 'GHS',
+        language: 'en',
+        lowStockLevel: 5,
+        analytics: true,
+        autoRefresh: true
     };
     
-    document.getElementById('enableNotifications').checked = settings.notifications;
-    document.getElementById('autoRefresh').checked = settings.autoRefresh;
-    document.getElementById('lowStockAlerts').checked = settings.lowStockAlerts;
+    // Load all settings into the UI
+    if (document.getElementById('themeSelector')) {
+        document.getElementById('themeSelector').value = settings.theme;
+        document.getElementById('currencySelector').value = settings.currency;
+        document.getElementById('languageSelector').value = settings.language;
+        document.getElementById('lowStockLevel').value = settings.lowStockLevel;
+        document.getElementById('enableAnalytics').checked = settings.analytics;
+        document.getElementById('autoRefresh').checked = settings.autoRefresh;
+    }
 }
 
 function saveAllSettings() {
-    // Save access settings
-    const accessSettings = {
-        products: document.getElementById('allowProducts').checked,
-        sales: document.getElementById('allowSales').checked,
-        revenue: document.getElementById('allowRevenue').checked,
-        inventory: document.getElementById('allowInventory').checked,
-        reports: document.getElementById('allowReports').checked
-    };
-    localStorage.setItem('accessSettings', JSON.stringify(accessSettings));
-    
     // Save system settings
     const systemSettings = {
-        notifications: document.getElementById('enableNotifications').checked,
-        autoRefresh: document.getElementById('autoRefresh').checked,
-        lowStockAlerts: document.getElementById('lowStockAlerts').checked
+        theme: document.getElementById('themeSelector').value,
+        currency: document.getElementById('currencySelector').value,
+        language: document.getElementById('languageSelector').value,
+        lowStockLevel: parseInt(document.getElementById('lowStockLevel').value),
+        analytics: document.getElementById('enableAnalytics').checked,
+        autoRefresh: document.getElementById('autoRefresh').checked
     };
     localStorage.setItem('systemSettings', JSON.stringify(systemSettings));
     
-    updateNavigationAccess();
     showNotification('All settings saved successfully!', 'success');
 }
 
 function resetToDefaults() {
-    // Reset access settings
-    const defaultAccess = getDefaultAccessSettings();
-    localStorage.setItem('accessSettings', JSON.stringify(defaultAccess));
-    
     // Reset system settings
     const defaultSystem = {
-        notifications: true,
-        autoRefresh: true,
-        lowStockAlerts: true
+        theme: 'light',
+        currency: 'GHS',
+        language: 'en',
+        lowStockLevel: 5,
+        analytics: true,
+        autoRefresh: true
     };
     localStorage.setItem('systemSettings', JSON.stringify(defaultSystem));
     
     // Reload settings UI
-    loadAccessSettings();
     loadSystemSettings();
-    updateNavigationAccess();
     
     showNotification('Settings reset to defaults', 'success');
 }
@@ -5037,7 +4940,6 @@ function addNotification(type, title, message, isUnread = true) {
 document.addEventListener('DOMContentLoaded', function() {
     // Load settings if on settings page
     if (document.getElementById('allowProducts')) {
-        loadAccessSettings();
         loadSystemSettings();
     }
     
@@ -5045,8 +4947,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const roleSelector = document.getElementById('userRole');
     if (roleSelector) {
         roleSelector.addEventListener('change', updateUserAccess);
-        // Initialize navigation access
-        updateNavigationAccess();
     }
     
     // Load existing notifications

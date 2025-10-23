@@ -48,39 +48,34 @@
                         <span>Dashboard</span>
                     </a>
                 </li>
-                <li class="restricted-item" data-required-role="admin">
-                    <a href="#products" data-section="products" onclick="checkAccess('products')">
+                <li>
+                    <a href="#products" data-section="products" onclick="navigateToSection('products')">
                         <i class="fas fa-cut"></i>
                         <span>Products</span>
-                        <i class="fas fa-lock access-lock"></i>
                     </a>
                 </li>
-                <li class="restricted-item" data-required-role="admin">
-                    <a href="#sales" data-section="sales" onclick="checkAccess('sales')">
+                <li>
+                    <a href="#sales" data-section="sales" onclick="navigateToSection('sales')">
                         <i class="fas fa-shopping-cart"></i>
                         <span>Sales</span>
-                        <i class="fas fa-lock access-lock"></i>
                     </a>
                 </li>
-                <li class="restricted-item" data-required-role="admin">
-                    <a href="#inventory" data-section="inventory" onclick="checkAccess('inventory')">
+                <li>
+                    <a href="#inventory" data-section="inventory" onclick="navigateToSection('inventory')">
                         <i class="fas fa-boxes"></i>
                         <span>Inventory</span>
-                        <i class="fas fa-lock access-lock"></i>
                     </a>
                 </li>
-                <li class="restricted-item" data-required-role="admin">
-                    <a href="#reports" data-section="reports" onclick="checkAccess('reports')">
+                <li>
+                    <a href="#reports" data-section="reports" onclick="navigateToSection('reports')">
                         <i class="fas fa-chart-bar"></i>
                         <span>Reports</span>
-                        <i class="fas fa-lock access-lock"></i>
                     </a>
                 </li>
-                <li class="restricted-item" data-required-role="admin">
-                    <a href="#revenue" data-section="revenue" onclick="checkAccess('revenue')">
+                <li>
+                    <a href="#revenue" data-section="revenue" onclick="navigateToSection('revenue')">
                         <i class="fas fa-dollar-sign"></i>
                         <span>Revenue Analytics</span>
-                        <i class="fas fa-lock access-lock"></i>
                     </a>
                 </li>
                 <li>
@@ -107,44 +102,39 @@
             </div>
             <ul class="sidebar-menu">
                 <li class="active">
-                    <a href="#overview" data-section="overview">
+                    <a href="#overview" data-section="overview" onclick="navigateToSection('overview')">
                         <i class="fas fa-home"></i>
                         <span>Dashboard</span>
                     </a>
                 </li>
-                <li class="restricted-item" data-required-role="admin">
-                    <a href="#products" data-section="products" onclick="checkAccess('products')">
+                <li>
+                    <a href="#products" data-section="products" onclick="navigateToSection('products')">
                         <i class="fas fa-cut"></i>
                         <span>Products</span>
-                        <i class="fas fa-lock access-lock"></i>
                     </a>
                 </li>
-                <li class="restricted-item" data-required-role="admin">
-                    <a href="#sales" data-section="sales" onclick="checkAccess('sales')">
+                <li>
+                    <a href="#sales" data-section="sales" onclick="navigateToSection('sales')">
                         <i class="fas fa-cash-register"></i>
                         <span>Sales</span>
-                        <i class="fas fa-lock access-lock"></i>
                     </a>
                 </li>
-                <li class="restricted-item" data-required-role="admin">
-                    <a href="#revenue" data-section="revenue" onclick="checkAccess('revenue')">
+                <li>
+                    <a href="#revenue" data-section="revenue" onclick="navigateToSection('revenue')">
                         <i class="fas fa-chart-line"></i>
                         <span>Revenue Analytics</span>
-                        <i class="fas fa-lock access-lock"></i>
                     </a>
                 </li>
-                <li class="restricted-item" data-required-role="admin">
-                    <a href="#reports" data-section="reports" onclick="checkAccess('reports')">
+                <li>
+                    <a href="#reports" data-section="reports" onclick="navigateToSection('reports')">
                         <i class="fas fa-file-alt"></i>
                         <span>Reports</span>
-                        <i class="fas fa-lock access-lock"></i>
                     </a>
                 </li>
-                <li class="restricted-item" data-required-role="admin">
-                    <a href="#inventory" data-section="inventory" onclick="checkAccess('inventory')">
+                <li>
+                    <a href="#inventory" data-section="inventory" onclick="navigateToSection('inventory')">
                         <i class="fas fa-warehouse"></i>
                         <span>Inventory Tracking</span>
-                        <i class="fas fa-lock access-lock"></i>
                     </a>
                 </li>
                 <li>
@@ -1270,80 +1260,7 @@
                         <p>System configuration and access control management</p>
                     </div>
 
-                    <!-- Access Control Settings -->
-                    <div class="settings-group">
-                        <div class="settings-group-header">
-                            <h3><i class="fas fa-shield-alt"></i> Access Control</h3>
-                            <p>Manage employee access to different sections of the dashboard</p>
-                        </div>
-                        
-                        <div class="settings-cards">
-                            <div class="settings-card">
-                                <div class="setting-item">
-                                    <div class="setting-info">
-                                        <h4><i class="fas fa-cut"></i> Products Management</h4>
-                                        <p>Allow employees to access the Products section</p>
-                                    </div>
-                                    <label class="toggle-switch">
-                                        <input type="checkbox" id="allowProducts" onchange="updateAccessSetting('products', this.checked)">
-                                        <span class="toggle-slider"></span>
-                                    </label>
-                                </div>
-                            </div>
 
-                            <div class="settings-card">
-                                <div class="setting-item">
-                                    <div class="setting-info">
-                                        <h4><i class="fas fa-cash-register"></i> Sales Management</h4>
-                                        <p>Allow employees to access the Sales section</p>
-                                    </div>
-                                    <label class="toggle-switch">
-                                        <input type="checkbox" id="allowSales" onchange="updateAccessSetting('sales', this.checked)">
-                                        <span class="toggle-slider"></span>
-                                    </label>
-                                </div>
-                            </div>
-
-                            <div class="settings-card">
-                                <div class="setting-item">
-                                    <div class="setting-info">
-                                        <h4><i class="fas fa-chart-line"></i> Revenue Analytics</h4>
-                                        <p>Allow employees to view revenue analytics and reports</p>
-                                    </div>
-                                    <label class="toggle-switch">
-                                        <input type="checkbox" id="allowRevenue" onchange="updateAccessSetting('revenue', this.checked)">
-                                        <span class="toggle-slider"></span>
-                                    </label>
-                                </div>
-                            </div>
-
-                            <div class="settings-card">
-                                <div class="setting-item">
-                                    <div class="setting-info">
-                                        <h4><i class="fas fa-warehouse"></i> Inventory Tracking</h4>
-                                        <p>Allow employees to access inventory management</p>
-                                    </div>
-                                    <label class="toggle-switch">
-                                        <input type="checkbox" id="allowInventory" onchange="updateAccessSetting('inventory', this.checked)">
-                                        <span class="toggle-slider"></span>
-                                    </label>
-                                </div>
-                            </div>
-
-                            <div class="settings-card">
-                                <div class="setting-item">
-                                    <div class="setting-info">
-                                        <h4><i class="fas fa-file-alt"></i> Reports</h4>
-                                        <p>Allow employees to access detailed reports</p>
-                                    </div>
-                                    <label class="toggle-switch">
-                                        <input type="checkbox" id="allowReports" onchange="updateAccessSetting('reports', this.checked)">
-                                        <span class="toggle-slider"></span>
-                                    </label>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
 
                     <!-- System Settings -->
                     <div class="settings-group">
