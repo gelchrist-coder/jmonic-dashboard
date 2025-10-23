@@ -2855,36 +2855,34 @@ class NaturalHairBusinessManager {
 
     updateTransactionLog() {
         const transactions = JSON.parse(localStorage.getItem('inventoryTransactions') || '[]');
-        const sales = JSON.parse(localStorage.getItem('jmonic_sales') || '[]');
-        const products = JSON.parse(localStorage.getItem('jmonic_products') || '[]');
         
-        console.log('Transaction Log Debug:', { transactions, sales: sales.length, products: products.length });
+        console.log('Transaction Log Debug:', { transactions: transactions.length });
         
+        // Use only the stored inventory transactions to avoid duplicates
+        // These are already created when sales are made via logInventoryTransaction()
         let allTransactions = [...transactions];
         
-        // Add sales as transactions
-        sales.forEach(sale => {
-            console.log('Processing sale:', sale);
-            if (sale.products && Array.isArray(sale.products)) {
-                sale.products.forEach(saleProduct => {
-                    const productData = products.find(p => p.id == saleProduct.id || p.id == saleProduct.product_id);
-                    const productName = saleProduct.name || saleProduct.product_name || (productData ? productData.name : `Unknown Product`);
-                    const currentStock = productData ? (productData.stock_quantity || productData.quantity || 0) : 0;
-                    const quantity = parseInt(saleProduct.quantity) || 0;
-                    const saleDate = sale.date || sale.created_at || sale.timestamp || new Date().toISOString();
-                    
-                    allTransactions.push({
-                        timestamp: saleDate,
-                        product: productName,
-                        type: 'sale',
-                        quantity: -quantity,
-                        previousStock: currentStock + quantity,
-                        newStock: currentStock,
-                        reference: `Sale #${sale.id || 'Unknown'}`
-                    });
-                });
+        // Remove duplicates based on reference number and timestamp
+        const uniqueTransactions = [];
+        const seen = new Set();
+        
+        allTransactions.forEach(transaction => {
+            const key = `${transaction.reference}-${transaction.timestamp}-${transaction.type}-${transaction.quantity}`;
+            if (!seen.has(key)) {
+                seen.add(key);
+                uniqueTransactions.push(transaction);
+            } else {
+                console.log('Duplicate transaction removed:', transaction);
             }
         });
+        
+        allTransactions = uniqueTransactions;
+        
+        // If we removed duplicates, update the stored transactions
+        if (transactions.length !== allTransactions.length) {
+            localStorage.setItem('inventoryTransactions', JSON.stringify(allTransactions));
+            console.log(`Cleaned up ${transactions.length - allTransactions.length} duplicate transactions`);
+        }
         
         // Sort by timestamp (newest first)
         allTransactions.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
@@ -3002,9 +3000,24 @@ class NaturalHairBusinessManager {
     logInventoryTransaction(productId, productName, type, quantity, previousStock, newStock, reference = '') {
         const transactions = JSON.parse(localStorage.getItem('inventoryTransactions') || '[]');
         
+        // Check for duplicates based on reference and timestamp (within 1 second)
+        const now = new Date();
+        const duplicateCheck = transactions.find(t => 
+            t.reference === reference && 
+            t.product_id == productId && 
+            t.type === type &&
+            t.quantity == quantity &&
+            Math.abs(new Date(t.timestamp) - now) < 1000 // Within 1 second
+        );
+        
+        if (duplicateCheck) {
+            console.log('Duplicate transaction prevented:', reference);
+            return duplicateCheck;
+        }
+        
         const transaction = {
             id: Date.now() + Math.random(),
-            timestamp: new Date().toISOString(),
+            timestamp: now.toISOString(),
             product_id: productId,
             product: productName,
             type: type, // 'purchase', 'sale', 'adjustment', 'return', 'transfer'
