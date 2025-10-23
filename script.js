@@ -2685,44 +2685,45 @@ class NaturalHairBusinessManager {
         const today = new Date();
         today.setHours(0, 0, 0, 0);
         
-        console.log('Updating inventory stats with', sales.length, 'sales records');
-        if (sales.length > 0) {
-            console.log('Sample sale structure:', JSON.stringify(sales[sales.length - 1], null, 2));
-            console.log('Today timestamp:', today.getTime());
-        }
+        console.log('=== INVENTORY STATS DEBUG ===');
+        console.log('Total sales:', sales.length);
+        console.log('Today date for comparison:', today.toISOString().split('T')[0]);
         
         // Calculate today's stock movements
         let stockInToday = 0;
         let stockOutToday = 0;
         let totalTransactions = 0;
         
-        // Count sales for today (stock out)
+        // Count sales for today (stock out) - Use more flexible date matching
+        const todayDateString = today.toISOString().split('T')[0]; // YYYY-MM-DD format
         const todaySales = sales.filter(sale => {
-            const saleDate = new Date(sale.date || sale.created_at);
-            saleDate.setHours(0, 0, 0, 0);
-            const isToday = saleDate.getTime() === today.getTime();
-            console.log('Sale date check:', {
-                originalDate: sale.date || sale.created_at,
-                parsedDate: saleDate.toISOString(),
-                todayDate: today.toISOString(),
-                isToday: isToday
-            });
+            const saleDate = sale.date || sale.created_at;
+            const saleDateString = saleDate.split('T')[0]; // Get YYYY-MM-DD part
+            const isToday = saleDateString === todayDateString;
+            
+            if (sales.length > 0) {
+                console.log('Checking sale:', saleDateString, 'vs today:', todayDateString, '= match:', isToday);
+            }
             return isToday;
         });
         
-        console.log('Found', todaySales.length, 'sales for today out of', sales.length, 'total sales');
+        console.log('Found', todaySales.length, 'sales for today');
         
         todaySales.forEach(sale => {
+            console.log('Processing sale:', sale.id, 'products:', sale.products?.length || 0);
             if (sale.products && Array.isArray(sale.products)) {
                 sale.products.forEach(product => {
                     const quantity = parseInt(product.quantity) || 0;
                     stockOutToday += quantity;
-                    console.log('Processing sale product:', product.name, 'quantity:', quantity);
+                    console.log('- Product:', product.name, 'quantity:', quantity, 'running total:', stockOutToday);
                 });
+            } else {
+                console.log('- Sale has no products array');
             }
         });
         
-        console.log('Today sales found:', todaySales.length, 'Total stock out:', stockOutToday);
+        console.log('=== FINAL TOTALS ===');
+        console.log('Stock Out Today:', stockOutToday);
         
         // Get stock alerts (low stock products)
         const lowStockProducts = products.filter(p => {
