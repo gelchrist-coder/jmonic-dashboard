@@ -842,51 +842,49 @@ class NaturalHairBusinessManager {
             return;
         }
         
-        // Dashboard KPI cards - focused on inventory/stock
-        const totalStockInEl = document.getElementById('totalStockIn');
-        const totalStockOutEl = document.getElementById('totalStockOut');
+        // Enhanced KPI cards update
+        const todayRevenueEl = document.getElementById('todayRevenue');
+        const todayProfitEl = document.getElementById('todayProfit');
         const todayOrdersEl = document.getElementById('todayOrders');
         const avgOrderValueEl = document.getElementById('avgOrderValue');
-        const totalProductsEl = document.getElementById('totalProducts');
+        const totalStockOutEl = document.getElementById('totalStockOut');
+        const totalStockInEl = document.getElementById('totalStockIn');
         
-        if (totalProductsEl) totalProductsEl.textContent = stats.total_products || 0;
+        if (todayRevenueEl) todayRevenueEl.textContent = `GHS ${(stats.today_sales || 0).toFixed(2)}`;
+        // Stock cards now on dashboard - will be calculated below
         
-        // Calculate stock movements
+        // Calculate additional metrics
         const sales = JSON.parse(localStorage.getItem('jmonic_sales') || '[]');
-        const transactions = JSON.parse(localStorage.getItem('inventoryTransactions') || '[]');
+        const products = JSON.parse(localStorage.getItem('jmonic_products') || '[]');
         
         const today = new Date().toDateString();
         const todaySales = sales.filter(sale => 
             new Date(sale.date || sale.created_at).toDateString() === today
         );
         
-        // Calculate total stock in (all purchases/adjustments)
-        let totalStockIn = 0;
-        transactions.forEach(transaction => {
-            if (transaction.type === 'purchase' || (transaction.type === 'adjustment' && transaction.quantity > 0)) {
-                totalStockIn += Math.abs(transaction.quantity);
-            }
-        });
-        
-        // Calculate total stock out (all sales)
-        let totalStockOut = 0;
-        sales.forEach(sale => {
-            if (sale.products && Array.isArray(sale.products)) {
-                sale.products.forEach(product => {
-                    totalStockOut += parseInt(product.quantity) || 0;
-                });
-            }
-        });
-        
-        // Update stock cards
-        if (totalStockInEl) totalStockInEl.textContent = totalStockIn.toString();
-        if (totalStockOutEl) totalStockOutEl.textContent = totalStockOut.toString();
-        
-        // Calculate order metrics for remaining cards
         const todayOrders = todaySales.length;
         const todayRevenue = stats.today_sales || 0;
         const avgOrderValue = todayOrders > 0 ? todayRevenue / todayOrders : 0;
         
+        // Calculate today's profit
+        let todayProfit = 0;
+        todaySales.forEach(sale => {
+            if (sale.products && Array.isArray(sale.products)) {
+                sale.products.forEach(product => {
+                    const productData = products.find(p => p.id == product.id);
+                    if (productData && productData.cost_price) {
+                        const cost = (productData.cost_price * (product.quantity || 1));
+                        todayProfit += (product.subtotal || 0) - cost;
+                    } else {
+                        todayProfit += (product.subtotal || 0); // Assume 100% profit if no cost data
+                    }
+                });
+            }
+        });
+        
+        const profitMargin = todayRevenue > 0 ? (todayProfit / todayRevenue) * 100 : 0;
+        
+        if (todayProfitEl) todayProfitEl.textContent = `GHS ${todayProfit.toFixed(2)}`;
         if (todayOrdersEl) todayOrdersEl.textContent = todayOrders.toString();
         if (avgOrderValueEl) avgOrderValueEl.textContent = `GHS ${avgOrderValue.toFixed(2)}`;
         
@@ -912,66 +910,48 @@ class NaturalHairBusinessManager {
             revenueChangeEl.textContent = `${changeText}${revenueChange.toFixed(1)}% vs yesterday`;
             revenueChangeEl.className = `kpi-change ${revenueChange >= 0 ? 'positive' : 'negative'}`;
         }
-    }
 
-    // Update Revenue Analytics Cards (moved from dashboard)
-    updateRevenueAnalyticsCards() {
-        const sales = JSON.parse(localStorage.getItem('jmonic_sales') || '[]');
-        const products = JSON.parse(localStorage.getItem('jmonic_products') || '[]');
+        // Calculate total stock movements (all time)
+        let totalStockOut = 0;
+        let totalStockIn = 0;
         
-        const today = new Date().toDateString();
-        const todaySales = sales.filter(sale => 
-            new Date(sale.date || sale.created_at).toDateString() === today
-        );
-        
-        // Calculate today's revenue
-        const todayRevenue = todaySales.reduce((sum, sale) => sum + (sale.revenue || 0), 0);
-        
-        // Calculate today's profit
-        let todayProfit = 0;
-        todaySales.forEach(sale => {
+        // Count all sales quantities (stock out)
+        sales.forEach(sale => {
             if (sale.products && Array.isArray(sale.products)) {
                 sale.products.forEach(product => {
-                    const productData = products.find(p => p.id == product.id);
-                    if (productData && productData.cost_price) {
-                        const cost = (productData.cost_price * (product.quantity || 1));
-                        todayProfit += (product.subtotal || 0) - cost;
-                    } else {
-                        todayProfit += (product.subtotal || 0); // Assume 100% profit if no cost data
-                    }
+                    totalStockOut += parseInt(product.quantity) || 0;
                 });
             }
         });
         
-        const profitMargin = todayRevenue > 0 ? (todayProfit / todayRevenue) * 100 : 0;
+        // Count all inventory transactions (stock in)
+        const transactions = JSON.parse(localStorage.getItem('inventoryTransactions') || '[]');
+        transactions.forEach(transaction => {
+            if (transaction.type === 'purchase' || transaction.type === 'adjustment') {
+                if (transaction.quantity > 0) {
+                    totalStockIn += parseInt(transaction.quantity) || 0;
+                }
+            }
+        });
         
-        // Update today's revenue card in revenue analytics
-        const todayRevenueEl = document.getElementById('todayRevenue');
-        const todayProfitEl = document.getElementById('todayProfit');
-        const profitMarginEl = document.getElementById('profitMargin');
-        const revenueChangeEl = document.getElementById('revenueChange');
+        // Also count initial stock from products as stock in
+        products.forEach(product => {
+            if (product.created_at) {
+                // Only count initial stock for products created (not updated)
+                const hasInitialStock = !transactions.some(t => 
+                    t.product_id == product.id && t.reference === 'Initial stock entry'
+                );
+                if (hasInitialStock && product.stock_quantity > 0) {
+                    totalStockIn += parseInt(product.stock_quantity) || 0;
+                }
+            }
+        });
         
-        if (todayRevenueEl) todayRevenueEl.textContent = `GHS ${todayRevenue.toFixed(2)}`;
-        if (todayProfitEl) todayProfitEl.textContent = `GHS ${todayProfit.toFixed(2)}`;
-        if (profitMarginEl) {
-            profitMarginEl.textContent = `${profitMargin.toFixed(1)}% margin`;
-            profitMarginEl.className = `revenue-change ${profitMargin >= 20 ? 'positive' : profitMargin >= 10 ? 'neutral' : 'negative'}`;
-        }
+        // Update stock display elements
+        if (totalStockOutEl) totalStockOutEl.textContent = totalStockOut.toLocaleString();
+        if (totalStockInEl) totalStockInEl.textContent = totalStockIn.toLocaleString();
         
-        // Calculate revenue change vs yesterday
-        const yesterday = new Date();
-        yesterday.setDate(yesterday.getDate() - 1);
-        const yesterdaySales = sales.filter(sale => 
-            new Date(sale.date || sale.created_at).toDateString() === yesterday.toDateString()
-        );
-        const yesterdayRevenue = yesterdaySales.reduce((sum, sale) => sum + (sale.revenue || 0), 0);
-        const revenueChange = yesterdayRevenue > 0 ? ((todayRevenue - yesterdayRevenue) / yesterdayRevenue * 100) : 0;
-        
-        if (revenueChangeEl) {
-            const changeText = revenueChange >= 0 ? '+' : '';
-            revenueChangeEl.textContent = `${changeText}${revenueChange.toFixed(1)}% vs yesterday`;
-            revenueChangeEl.className = `revenue-change ${revenueChange >= 0 ? 'positive' : 'negative'}`;
-        }
+        console.log('Stock calculations:', { totalStockOut, totalStockIn, salesCount: sales.length, transactionsCount: transactions.length });
     }
     
     // Sales Dashboard Methods
@@ -3509,7 +3489,6 @@ function showSection(sectionName) {
         revenueAnalytics.loadRevenueAnalytics();
         if (businessManager) {
             businessManager.updateRevenueForecast(); // Update forecasting when revenue section is viewed
-            businessManager.updateRevenueAnalyticsCards(); // Update today's revenue/profit cards
         }
     } else if (sectionName === 'reports' && businessManager) {
         // Update inventory reports when reports section is viewed
@@ -4677,17 +4656,6 @@ function navigateToSection(sectionName) {
         }
     });
     
-    // Update active states in desktop sidebar
-    const desktopMenuItems = document.querySelectorAll('.sidebar-menu li');
-    desktopMenuItems.forEach(item => {
-        const link = item.querySelector('a');
-        if (link && link.getAttribute('data-section') === sectionName) {
-            item.classList.add('active');
-        } else {
-            item.classList.remove('active');
-        }
-    });
-    
     // Update active states in bottom navigation
     const bottomNavItems = document.querySelectorAll('.sidebar.mobile .nav-item');
     bottomNavItems.forEach(item => {
@@ -4701,267 +4669,10 @@ function navigateToSection(sectionName) {
     // Show the selected section
     if (typeof showSection === 'function') {
         showSection(sectionName);
-    } else {
-        console.warn('showSection function not found, falling back to basic section switching');
-        // Fallback section switching
-        document.querySelectorAll('.content-section').forEach(section => {
-            section.classList.remove('active');
-        });
-        const targetSection = document.getElementById(sectionName);
-        if (targetSection) {
-            targetSection.classList.add('active');
-        }
     }
     
     // Small delay to ensure smooth transition
     setTimeout(() => {
         console.log('Navigation completed to:', sectionName);
     }, 300);
-}
-
-// User Role Management (Simplified)
-function updateUserAccess() {
-    const currentRole = document.getElementById('userRole').value;
-    console.log('User role changed to:', currentRole);
-    
-    // Show appropriate message
-    if (currentRole === 'admin') {
-        showNotification('Administrator access enabled', 'success');
-    } else {
-        showNotification('Employee mode activated', 'info');
-    }
-}
-
-// System Settings Functions
-function updateSystemSetting(setting, value) {
-    const systemSettings = JSON.parse(localStorage.getItem('systemSettings')) || {
-        notifications: true,
-        autoRefresh: true,
-        lowStockAlerts: true
-    };
-    
-    systemSettings[setting] = value;
-    localStorage.setItem('systemSettings', JSON.stringify(systemSettings));
-    
-    const settingName = setting.charAt(0).toUpperCase() + setting.slice(1);
-    const status = value ? 'enabled' : 'disabled';
-    showNotification(`${settingName} ${status}`, 'success');
-}
-
-function loadSystemSettings() {
-    const settings = JSON.parse(localStorage.getItem('systemSettings')) || {
-        theme: 'light',
-        currency: 'GHS',
-        language: 'en',
-        lowStockLevel: 5,
-        analytics: true,
-        autoRefresh: true
-    };
-    
-    // Load all settings into the UI
-    if (document.getElementById('themeSelector')) {
-        document.getElementById('themeSelector').value = settings.theme;
-        document.getElementById('currencySelector').value = settings.currency;
-        document.getElementById('languageSelector').value = settings.language;
-        document.getElementById('lowStockLevel').value = settings.lowStockLevel;
-        document.getElementById('enableAnalytics').checked = settings.analytics;
-        document.getElementById('autoRefresh').checked = settings.autoRefresh;
-    }
-}
-
-function saveAllSettings() {
-    // Save system settings
-    const systemSettings = {
-        theme: document.getElementById('themeSelector').value,
-        currency: document.getElementById('currencySelector').value,
-        language: document.getElementById('languageSelector').value,
-        lowStockLevel: parseInt(document.getElementById('lowStockLevel').value),
-        analytics: document.getElementById('enableAnalytics').checked,
-        autoRefresh: document.getElementById('autoRefresh').checked
-    };
-    localStorage.setItem('systemSettings', JSON.stringify(systemSettings));
-    
-    showNotification('All settings saved successfully!', 'success');
-}
-
-function resetToDefaults() {
-    // Reset system settings
-    const defaultSystem = {
-        theme: 'light',
-        currency: 'GHS',
-        language: 'en',
-        lowStockLevel: 5,
-        analytics: true,
-        autoRefresh: true
-    };
-    localStorage.setItem('systemSettings', JSON.stringify(defaultSystem));
-    
-    // Reload settings UI
-    loadSystemSettings();
-    
-    showNotification('Settings reset to defaults', 'success');
-}
-
-// Delete Data Functions
-function showDeleteConfirmation() {
-    // Remove existing modal if any
-    const existingModal = document.querySelector('.delete-confirmation-overlay');
-    if (existingModal) {
-        existingModal.remove();
-    }
-    
-    // Create delete confirmation modal
-    const modal = document.createElement('div');
-    modal.className = 'delete-confirmation-overlay';
-    modal.innerHTML = `
-        <div class="delete-confirmation-modal">
-            <div class="delete-confirmation-icon">
-                <i class="fas fa-exclamation-triangle"></i>
-            </div>
-            <h3>Delete All Data</h3>
-            <p>This action will permanently delete all your business data including:</p>
-            <ul>
-                <li>All products and inventory</li>
-                <li>Sales history and transactions</li>
-                <li>Revenue analytics data</li>
-                <li>System settings and preferences</li>
-            </ul>
-            <p><strong>This action cannot be undone!</strong></p>
-            <div class="delete-confirmation-actions">
-                <button class="btn btn-danger" onclick="deleteAllData()">
-                    <i class="fas fa-trash"></i> Yes, Delete Everything
-                </button>
-                <button class="btn btn-secondary" onclick="closeDeleteConfirmation()">
-                    <i class="fas fa-times"></i> Cancel
-                </button>
-            </div>
-        </div>
-    `;
-    
-    document.body.appendChild(modal);
-}
-
-function closeDeleteConfirmation() {
-    const modal = document.querySelector('.delete-confirmation-overlay');
-    if (modal) {
-        modal.remove();
-    }
-}
-
-function deleteAllData() {
-    // Clear all localStorage data
-    const keysToDelete = [
-        'jmonic_products',
-        'jmonic_sales',
-        'jmonic_inventory_transactions',
-        'jmonic_settings',
-        'accessSettings',
-        'systemSettings'
-    ];
-    
-    keysToDelete.forEach(key => {
-        localStorage.removeItem(key);
-    });
-    
-    // Close the modal
-    closeDeleteConfirmation();
-    
-    // Show success notification
-    showNotification('All data has been deleted successfully', 'success');
-    
-    // Reload the page to reset everything
-    setTimeout(() => {
-        window.location.reload();
-    }, 2000);
-}
-
-// Notification Functions
-function markAllAsRead(type) {
-    const notifications = document.querySelectorAll(`#${type}Alerts .notification-item`);
-    notifications.forEach(notification => {
-        notification.classList.remove('unread');
-    });
-    
-    showNotification(`All ${type} notifications marked as read`, 'success');
-}
-
-function clearActivity() {
-    const activityList = document.getElementById('activityAlerts');
-    if (activityList) {
-        activityList.innerHTML = '<div class="empty-state">No recent activity</div>';
-        showNotification('Activity history cleared', 'success');
-    }
-}
-
-function addNotification(type, title, message, isUnread = true) {
-    const containerId = type + 'Alerts';
-    const container = document.getElementById(containerId);
-    
-    if (!container) return;
-    
-    const notification = document.createElement('div');
-    notification.className = `notification-item ${isUnread ? 'unread' : ''}`;
-    
-    let iconClass = '';
-    let iconType = '';
-    
-    switch (type) {
-        case 'stock':
-            iconClass = 'fas fa-exclamation-triangle';
-            iconType = 'warning';
-            break;
-        case 'system':
-            iconClass = 'fas fa-info-circle';
-            iconType = 'info';
-            break;
-        case 'activity':
-            iconClass = 'fas fa-check-circle';
-            iconType = 'success';
-            break;
-    }
-    
-    notification.innerHTML = `
-        <div class="notification-icon ${iconType}">
-            <i class="${iconClass}"></i>
-        </div>
-        <div class="notification-content">
-            <h4>${title}</h4>
-            <p>${message}</p>
-            <small>Just now</small>
-        </div>
-        ${type === 'stock' ? '<button class="notification-action" onclick="navigateToSection(\'inventory\')"><i class="fas fa-eye"></i></button>' : ''}
-    `;
-    
-    // Add to the beginning of the list
-    container.insertBefore(notification, container.firstChild);
-}
-
-// Initialize settings when page loads
-document.addEventListener('DOMContentLoaded', function() {
-    // Load settings if on settings page
-    if (document.getElementById('allowProducts')) {
-        loadSystemSettings();
-    }
-    
-    // Set up role change handler
-    const roleSelector = document.getElementById('userRole');
-    if (roleSelector) {
-        roleSelector.addEventListener('change', updateUserAccess);
-    }
-    
-    // Load existing notifications
-    loadNotifications();
-});
-
-function loadNotifications() {
-    // Load low stock notifications
-    const products = JSON.parse(localStorage.getItem('jmonic_products')) || [];
-    const lowStockProducts = products.filter(product => 
-        parseInt(product.currentStock || product.quantity || 0) <= parseInt(product.reorderLevel || 5)
-    );
-    
-    if (lowStockProducts.length > 0) {
-        addNotification('stock', 'Low Stock Alert', 
-            `${lowStockProducts.length} product(s) are running low on stock`, true);
-    }
 }

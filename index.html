@@ -78,18 +78,6 @@
                         <span>Revenue Analytics</span>
                     </a>
                 </li>
-                <li>
-                    <a href="#notifications" data-section="notifications" onclick="navigateToSection('notifications')">
-                        <i class="fas fa-bell"></i>
-                        <span>Notifications</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="#settings" data-section="settings" onclick="navigateToSection('settings')">
-                        <i class="fas fa-cog"></i>
-                        <span>Settings</span>
-                    </a>
-                </li>
             </ul>
         </div>
     </nav>
@@ -102,106 +90,216 @@
             </div>
             <ul class="sidebar-menu">
                 <li class="active">
-                    <a href="#overview" data-section="overview" onclick="navigateToSection('overview')">
+                    <a href="#overview" data-section="overview">
                         <i class="fas fa-home"></i>
                         <span>Dashboard</span>
                     </a>
                 </li>
                 <li>
-                    <a href="#products" data-section="products" onclick="navigateToSection('products')">
+                    <a href="#products" data-section="products">
                         <i class="fas fa-cut"></i>
                         <span>Products</span>
                     </a>
                 </li>
                 <li>
-                    <a href="#sales" data-section="sales" onclick="navigateToSection('sales')">
+                    <a href="#sales" data-section="sales">
                         <i class="fas fa-cash-register"></i>
                         <span>Sales</span>
                     </a>
                 </li>
                 <li>
-                    <a href="#revenue" data-section="revenue" onclick="navigateToSection('revenue')">
+                    <a href="#revenue" data-section="revenue">
                         <i class="fas fa-chart-line"></i>
                         <span>Revenue Analytics</span>
                     </a>
                 </li>
                 <li>
-                    <a href="#reports" data-section="reports" onclick="navigateToSection('reports')">
-                        <i class="fas fa-file-alt"></i>
-                        <span>Reports</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="#inventory" data-section="inventory" onclick="navigateToSection('inventory')">
+                    <a href="#inventory" data-section="inventory">
                         <i class="fas fa-warehouse"></i>
                         <span>Inventory Tracking</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="#notifications" data-section="notifications" onclick="navigateToSection('notifications')">
-                        <i class="fas fa-bell"></i>
-                        <span>Notifications</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="#settings" data-section="settings" onclick="navigateToSection('settings')">
-                        <i class="fas fa-cog"></i>
-                        <span>Settings</span>
                     </a>
                 </li>
             </ul>
         </nav>
 
-        <!-- Floating Mobile Menu Button -->
-        <button class="floating-menu-btn mobile-only" onclick="toggleMobileSidebar()" aria-label="Toggle Menu">
-            <i class="fas fa-bars"></i>
-        </button>
-
-        <!-- Floating User Role Selector -->
-        <div class="floating-role-selector">
-            <div class="role-selector">
-                <label for="userRole">
-                    <i class="fas fa-user-shield"></i>
-                </label>
-                <select id="userRole" onchange="updateUserAccess()">
-                    <option value="admin">Admin</option>
-                    <option value="employee">Employee</option>
-                </select>
-            </div>
-        </div>
-
         <!-- Main Content -->
         <main class="main-content">
+            <!-- Header -->
+            <header class="dashboard-header">
+                <div class="header-left">
+                    <button class="sidebar-toggle" aria-label="Toggle Sidebar">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                    <div class="header-title-section">
+                        <h1 id="page-title">J'MONIC ENTERPRISE Dashboard</h1>
+                        <p class="header-subtitle">Manage your products and sales</p>
+                    </div>
+                </div>
+                <div class="header-center">
+                    <div class="search-bar">
+                        <i class="fas fa-search"></i>
+                        <input type="text" placeholder="Search products, sales, or customers..." id="globalSearch">
+                        <div class="search-suggestions" id="searchSuggestions" style="display: none;">
+                            <!-- Search suggestions will appear here -->
+                        </div>
+                    </div>
+                </div>
+                <div class="header-right">
+                    <div class="header-actions">
+                        <button class="header-btn" title="Notifications" id="notificationBtn">
+                            <i class="fas fa-bell"></i>
+                            <span class="notification-badge" style="display: none;">0</span>
+                        </button>
+                        <button class="header-btn" title="Clear All Data" onclick="businessManager.clearAllData()" style="color: #e74c3c;">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                        <button class="header-btn" title="Quick Actions" id="quickActionsBtn">
+                            <i class="fas fa-plus-circle"></i>
+                        </button>
+                        <button class="header-btn" title="Settings" id="settingsBtn">
+                            <i class="fas fa-cog"></i>
+                        </button>
+                    </div>
+                    
+                    <!-- Notification Dropdown -->
+                    <div class="notification-dropdown" id="notificationDropdown" style="display: none;">
+                        <div class="dropdown-header">
+                            <h3><i class="fas fa-bell"></i> Notifications</h3>
+                            <button class="clear-notifications" onclick="businessManager.clearNotifications()">Clear All</button>
+                        </div>
+                        <div class="notification-list" id="notificationList">
+                            <div class="no-notifications">No new notifications</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Quick Actions Dropdown -->
+                    <div class="quick-actions-dropdown" id="quickActionsDropdown" style="display: none;">
+                        <div class="dropdown-header">
+                            <h3><i class="fas fa-bolt"></i> Quick Actions</h3>
+                        </div>
+                        <div class="quick-actions-list">
+                            <button class="quick-action-item" onclick="openModal('addProductModal')">
+                                <i class="fas fa-plus"></i>
+                                <span>Add Product</span>
+                            </button>
+                            <button class="quick-action-item" onclick="openModal('addSaleModal')">
+                                <i class="fas fa-shopping-cart"></i>
+                                <span>Record Sale</span>
+                            </button>
+                            <button class="quick-action-item" onclick="showSection('inventory')">
+                                <i class="fas fa-boxes"></i>
+                                <span>View Inventory</span>
+                            </button>
+                            <button class="quick-action-item" onclick="showSection('sales')">
+                                <i class="fas fa-chart-line"></i>
+                                <span>View Sales</span>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Settings Dropdown -->
+                    <div class="dropdown-backdrop" id="dropdownBackdrop" style="display: none;"></div>
+                    <div class="settings-dropdown" id="settingsDropdown" style="display: none;">
+                        <div class="dropdown-header">
+                            <h3><i class="fas fa-cog"></i> Settings</h3>
+                            <button class="close-dropdown" onclick="businessManager.closeAllDropdowns()">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                        <div class="settings-list">
+                            <div class="setting-item">
+                                <label>
+                                    <i class="fas fa-palette"></i>
+                                    <span>Theme</span>
+                                    <select id="themeSelector">
+                                        <option value="light">Light</option>
+                                        <option value="dark">Dark</option>
+                                        <option value="auto">Auto</option>
+                                    </select>
+                                </label>
+                            </div>
+                            <div class="setting-item">
+                                <label>
+                                    <i class="fas fa-globe"></i>
+                                    <span>Currency</span>
+                                    <select id="currencySelector">
+                                        <option value="GHS">GHS (Ghana Cedi)</option>
+                                        <option value="USD">USD (US Dollar)</option>
+                                        <option value="EUR">EUR (Euro)</option>
+                                        <option value="GBP">GBP (British Pound)</option>
+                                    </select>
+                                </label>
+                            </div>
+                            <div class="setting-item">
+                                <label>
+                                    <i class="fas fa-language"></i>
+                                    <span>Language</span>
+                                    <select id="languageSelector">
+                                        <option value="en">English</option>
+                                        <option value="tw">Twi</option>
+                                        <option value="fr">French</option>
+                                    </select>
+                                </label>
+                            </div>
+                            <div class="setting-item">
+                                <label>
+                                    <i class="fas fa-bell"></i>
+                                    <span>Low Stock Alert Level</span>
+                                    <input type="number" id="lowStockLevel" min="1" max="100" value="5" placeholder="5">
+                                </label>
+                            </div>
+                            <div class="setting-item">
+                                <label>
+                                    <i class="fas fa-chart-bar"></i>
+                                    <span>Enable Analytics</span>
+                                    <input type="checkbox" id="enableAnalytics" checked>
+                                </label>
+                            </div>
+                            <div class="setting-actions">
+                                <button class="btn-primary" onclick="businessManager.saveSettings()">Save Settings</button>
+                                <button class="btn-secondary" onclick="businessManager.resetSettings()">Reset to Default</button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="user-profile">
+                        <div class="user-info">
+                            <span class="user-name">Business Owner</span>
+                            <span class="user-role">Administrator</span>
+                        </div>
+                        <div class="user-avatar" id="userAvatar">
+                            <i class="fas fa-user-circle"></i>
+                        </div>
+                        <div class="user-dropdown" id="userDropdown" style="display: none;">
+                            <div class="dropdown-item">
+                                <i class="fas fa-user"></i>
+                                <span>Profile Settings</span>
+                            </div>
+                            <div class="dropdown-item">
+                                <i class="fas fa-chart-bar"></i>
+                                <span>Business Reports</span>
+                            </div>
+                            <div class="dropdown-item">
+                                <i class="fas fa-download"></i>
+                                <span>Export Data</span>
+                            </div>
+                            <div class="dropdown-divider"></div>
+                            <div class="dropdown-item">
+                                <i class="fas fa-sign-out-alt"></i>
+                                <span>Sign Out</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
             <!-- Dashboard Content -->
             <div class="dashboard-content">
                 <!-- Overview Section -->
                 <section id="overview" class="content-section active">
                     <!-- Revenue & Business KPI Cards -->
                     <div class="kpi-grid">
-                        <div class="kpi-card stock-in">
-                            <div class="kpi-card-content">
-                                <div class="kpi-icon">
-                                    <i class="fas fa-arrow-up"></i>
-                                </div>
-                                <div class="kpi-details">
-                                    <div class="kpi-title">Stock In (Total)</div>
-                                    <div class="kpi-value" id="totalStockIn">0</div>
-                                    <div class="kpi-change positive" id="stockInChange">Units received</div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="kpi-card stock-out">
-                            <div class="kpi-card-content">
-                                <div class="kpi-icon">
-                                    <i class="fas fa-arrow-down"></i>
-                                </div>
-                                <div class="kpi-details">
-                                    <div class="kpi-title">Stock Out (Total)</div>
-                                    <div class="kpi-value" id="totalStockOut">0</div>
-                                    <div class="kpi-change negative" id="stockOutChange">Units sold</div>
-                                </div>
-                            </div>
-                        </div>
+
                         <div class="kpi-card orders">
                             <div class="kpi-card-content">
                                 <div class="kpi-icon">
@@ -214,27 +312,27 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="kpi-card avg-order">
+                        <div class="kpi-card stock-out">
                             <div class="kpi-card-content">
                                 <div class="kpi-icon">
-                                    <i class="fas fa-calculator"></i>
+                                    <i class="fas fa-arrow-down"></i>
                                 </div>
                                 <div class="kpi-details">
-                                    <div class="kpi-title">Avg Order Value</div>
-                                    <div class="kpi-value" id="avgOrderValue">GHS 0.00</div>
-                                    <div class="kpi-change neutral">Per transaction</div>
+                                    <div class="kpi-title">Total Stock Out</div>
+                                    <div class="kpi-value" id="totalStockOut">0</div>
+                                    <div class="kpi-change neutral">Units sold</div>
                                 </div>
                             </div>
                         </div>
-                        <div class="kpi-card products">
+                        <div class="kpi-card stock-in">
                             <div class="kpi-card-content">
                                 <div class="kpi-icon">
-                                    <i class="fas fa-box"></i>
+                                    <i class="fas fa-arrow-up"></i>
                                 </div>
                                 <div class="kpi-details">
-                                    <div class="kpi-title">Total Products</div>
-                                    <div class="kpi-value" id="totalProducts">0</div>
-                                    <div class="kpi-change neutral">In inventory</div>
+                                    <div class="kpi-title">Total Stock In</div>
+                                    <div class="kpi-value" id="totalStockIn">0</div>
+                                    <div class="kpi-change neutral">Units received</div>
                                 </div>
                             </div>
                         </div>
@@ -537,28 +635,36 @@
                         </div>
                     </div>
 
+                    <!-- Today's Revenue & Profit KPI Cards -->
+                    <div class="kpi-grid revenue-today-grid">
+                        <div class="kpi-card revenue">
+                            <div class="kpi-card-content">
+                                <div class="kpi-icon">
+                                    <i class="fas fa-money-bill-wave"></i>
+                                </div>
+                                <div class="kpi-details">
+                                    <div class="kpi-title">Today's Revenue</div>
+                                    <div class="kpi-value" id="todayRevenue">GHS 0.00</div>
+                                    <div class="kpi-change positive" id="revenueChange">+0.0% vs yesterday</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="kpi-card profit">
+                            <div class="kpi-card-content">
+                                <div class="kpi-icon">
+                                    <i class="fas fa-chart-line"></i>
+                                </div>
+                                <div class="kpi-details">
+                                    <div class="kpi-title">Today's Profit</div>
+                                    <div class="kpi-value" id="todayProfit">GHS 0.00</div>
+                                    <div class="kpi-change neutral" id="profitMargin">0.0% margin</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Revenue Overview Cards -->
                     <div class="revenue-overview-grid">
-                        <div class="revenue-card today-revenue">
-                            <div class="revenue-card-header">
-                                <h3>Today's Revenue</h3>
-                                <i class="fas fa-calendar-day"></i>
-                            </div>
-                            <div class="revenue-value" id="todayRevenue">GHS 0.00</div>
-                            <div class="revenue-change positive" id="revenueChange">+0.0% vs yesterday</div>
-                            <div class="revenue-chart-mini" id="todayRevenueChart"></div>
-                        </div>
-                        
-                        <div class="revenue-card today-profit">
-                            <div class="revenue-card-header">
-                                <h3>Today's Profit</h3>
-                                <i class="fas fa-chart-line"></i>
-                            </div>
-                            <div class="revenue-value" id="todayProfit">GHS 0.00</div>
-                            <div class="revenue-change neutral" id="profitMargin">0.0% margin</div>
-                            <div class="revenue-chart-mini" id="todayProfitChart"></div>
-                        </div>
-                        
                         <div class="revenue-card total-revenue">
                             <div class="revenue-card-header">
                                 <h3>Total Revenue</h3>
@@ -1253,195 +1359,9 @@
                     </div>
                 </section>
 
-                <!-- Settings Section -->
                 <section id="settings" class="content-section">
-                    <div class="section-header">
-                        <h2><i class="fas fa-cog"></i> Settings</h2>
-                        <p>System configuration and access control management</p>
-                    </div>
-
-
-
-                    <!-- System Settings -->
-                    <div class="settings-group">
-                        <div class="settings-group-header">
-                            <h3><i class="fas fa-tools"></i> System Settings</h3>
-                            <p>General system configuration options</p>
-                        </div>
-                        
-                        <div class="settings-cards">
-                            <div class="settings-card">
-                                <div class="setting-item">
-                                    <div class="setting-info">
-                                        <h4><i class="fas fa-palette"></i> Theme</h4>
-                                        <p>Choose your preferred dashboard theme</p>
-                                    </div>
-                                    <select id="themeSelector" class="setting-select" onchange="updateSystemSetting('theme', this.value)">
-                                        <option value="light">Light</option>
-                                        <option value="dark">Dark</option>
-                                        <option value="auto">Auto</option>
-                                    </select>
-                                </div>
-                            </div>
-
-                            <div class="settings-card">
-                                <div class="setting-item">
-                                    <div class="setting-info">
-                                        <h4><i class="fas fa-globe"></i> Currency</h4>
-                                        <p>Set your preferred currency for transactions</p>
-                                    </div>
-                                    <select id="currencySelector" class="setting-select" onchange="updateSystemSetting('currency', this.value)">
-                                        <option value="GHS">GHS (Ghana Cedi)</option>
-                                        <option value="USD">USD (US Dollar)</option>
-                                        <option value="EUR">EUR (Euro)</option>
-                                        <option value="GBP">GBP (British Pound)</option>
-                                    </select>
-                                </div>
-                            </div>
-
-                            <div class="settings-card">
-                                <div class="setting-item">
-                                    <div class="setting-info">
-                                        <h4><i class="fas fa-language"></i> Language</h4>
-                                        <p>Select your preferred language</p>
-                                    </div>
-                                    <select id="languageSelector" class="setting-select" onchange="updateSystemSetting('language', this.value)">
-                                        <option value="en">English</option>
-                                        <option value="tw">Twi</option>
-                                        <option value="fr">French</option>
-                                    </select>
-                                </div>
-                            </div>
-
-                            <div class="settings-card">
-                                <div class="setting-item">
-                                    <div class="setting-info">
-                                        <h4><i class="fas fa-bell"></i> Low Stock Alert Level</h4>
-                                        <p>Set the minimum stock level for alerts</p>
-                                    </div>
-                                    <input type="number" id="lowStockLevel" class="setting-input" min="1" max="100" value="5" onchange="updateSystemSetting('lowStockLevel', this.value)">
-                                </div>
-                            </div>
-
-                            <div class="settings-card">
-                                <div class="setting-item">
-                                    <div class="setting-info">
-                                        <h4><i class="fas fa-chart-bar"></i> Enable Analytics</h4>
-                                        <p>Turn on advanced analytics and reporting</p>
-                                    </div>
-                                    <label class="toggle-switch">
-                                        <input type="checkbox" id="enableAnalytics" checked onchange="updateSystemSetting('analytics', this.checked)">
-                                        <span class="toggle-slider"></span>
-                                    </label>
-                                </div>
-                            </div>
-
-                            <div class="settings-card">
-                                <div class="setting-item">
-                                    <div class="setting-info">
-                                        <h4><i class="fas fa-sync-alt"></i> Auto-refresh Data</h4>
-                                        <p>Automatically refresh dashboard data</p>
-                                    </div>
-                                    <label class="toggle-switch">
-                                        <input type="checkbox" id="autoRefresh" checked onchange="updateSystemSetting('autoRefresh', this.checked)">
-                                        <span class="toggle-slider"></span>
-                                    </label>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Actions -->
-                    <div class="settings-actions">
-                        <button class="btn btn-primary" onclick="saveAllSettings()">
-                            <i class="fas fa-save"></i> Save All Settings
-                        </button>
-                        <button class="btn btn-secondary" onclick="resetToDefaults()">
-                            <i class="fas fa-undo"></i> Reset to Defaults
-                        </button>
-                        <button class="btn btn-danger" onclick="showDeleteConfirmation()">
-                            <i class="fas fa-trash"></i> Delete All Data
-                        </button>
-                    </div>
-                </section>
-
-                <!-- Notifications Section -->
-                <section id="notifications" class="content-section">
-                    <div class="section-header">
-                        <h2><i class="fas fa-bell"></i> Notifications</h2>
-                        <p>System alerts, low stock warnings, and important updates</p>
-                    </div>
-
-                    <div class="notifications-container">
-                        <!-- Low Stock Alerts -->
-                        <div class="notification-group">
-                            <div class="notification-group-header">
-                                <h3><i class="fas fa-exclamation-triangle"></i> Stock Alerts</h3>
-                                <button class="btn btn-sm btn-secondary" onclick="markAllAsRead('stock')">
-                                    <i class="fas fa-check-double"></i> Mark All Read
-                                </button>
-                            </div>
-                            <div id="stockAlerts" class="notification-list">
-                                <div class="notification-item unread">
-                                    <div class="notification-icon warning">
-                                        <i class="fas fa-exclamation-triangle"></i>
-                                    </div>
-                                    <div class="notification-content">
-                                        <h4>Low Stock Alert</h4>
-                                        <p>Some products are running low on stock</p>
-                                        <small>5 minutes ago</small>
-                                    </div>
-                                    <button class="notification-action" onclick="navigateToSection('inventory')">
-                                        <i class="fas fa-eye"></i>
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- System Notifications -->
-                        <div class="notification-group">
-                            <div class="notification-group-header">
-                                <h3><i class="fas fa-info-circle"></i> System Updates</h3>
-                                <button class="btn btn-sm btn-secondary" onclick="markAllAsRead('system')">
-                                    <i class="fas fa-check-double"></i> Mark All Read
-                                </button>
-                            </div>
-                            <div id="systemAlerts" class="notification-list">
-                                <div class="notification-item">
-                                    <div class="notification-icon info">
-                                        <i class="fas fa-info-circle"></i>
-                                    </div>
-                                    <div class="notification-content">
-                                        <h4>Dashboard Updated</h4>
-                                        <p>New features and improvements have been added</p>
-                                        <small>2 hours ago</small>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Recent Activity -->
-                        <div class="notification-group">
-                            <div class="notification-group-header">
-                                <h3><i class="fas fa-clock"></i> Recent Activity</h3>
-                                <button class="btn btn-sm btn-secondary" onclick="clearActivity()">
-                                    <i class="fas fa-broom"></i> Clear All
-                                </button>
-                            </div>
-                            <div id="activityAlerts" class="notification-list">
-                                <div class="notification-item">
-                                    <div class="notification-icon success">
-                                        <i class="fas fa-check-circle"></i>
-                                    </div>
-                                    <div class="notification-content">
-                                        <h4>Sale Recorded</h4>
-                                        <p>New sale transaction has been processed</p>
-                                        <small>1 hour ago</small>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                    <h2>Settings</h2>
+                    <p>Settings panel coming soon...</p>
                 </section>
             </div>
         </main>
