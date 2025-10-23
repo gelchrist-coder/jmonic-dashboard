@@ -842,49 +842,51 @@ class NaturalHairBusinessManager {
             return;
         }
         
-        // Enhanced KPI cards update
-        const todayRevenueEl = document.getElementById('todayRevenue');
-        const todayProfitEl = document.getElementById('todayProfit');
+        // Dashboard KPI cards - focused on inventory/stock
+        const totalStockInEl = document.getElementById('totalStockIn');
+        const totalStockOutEl = document.getElementById('totalStockOut');
         const todayOrdersEl = document.getElementById('todayOrders');
         const avgOrderValueEl = document.getElementById('avgOrderValue');
         const totalProductsEl = document.getElementById('totalProducts');
         
-        if (todayRevenueEl) todayRevenueEl.textContent = `GHS ${(stats.today_sales || 0).toFixed(2)}`;
         if (totalProductsEl) totalProductsEl.textContent = stats.total_products || 0;
-        // Low stock card removed - now only shown in notifications
         
-        // Calculate additional metrics
+        // Calculate stock movements
         const sales = JSON.parse(localStorage.getItem('jmonic_sales') || '[]');
-        const products = JSON.parse(localStorage.getItem('jmonic_products') || '[]');
+        const transactions = JSON.parse(localStorage.getItem('inventoryTransactions') || '[]');
         
         const today = new Date().toDateString();
         const todaySales = sales.filter(sale => 
             new Date(sale.date || sale.created_at).toDateString() === today
         );
         
-        const todayOrders = todaySales.length;
-        const todayRevenue = stats.today_sales || 0;
-        const avgOrderValue = todayOrders > 0 ? todayRevenue / todayOrders : 0;
+        // Calculate total stock in (all purchases/adjustments)
+        let totalStockIn = 0;
+        transactions.forEach(transaction => {
+            if (transaction.type === 'purchase' || (transaction.type === 'adjustment' && transaction.quantity > 0)) {
+                totalStockIn += Math.abs(transaction.quantity);
+            }
+        });
         
-        // Calculate today's profit
-        let todayProfit = 0;
-        todaySales.forEach(sale => {
+        // Calculate total stock out (all sales)
+        let totalStockOut = 0;
+        sales.forEach(sale => {
             if (sale.products && Array.isArray(sale.products)) {
                 sale.products.forEach(product => {
-                    const productData = products.find(p => p.id == product.id);
-                    if (productData && productData.cost_price) {
-                        const cost = (productData.cost_price * (product.quantity || 1));
-                        todayProfit += (product.subtotal || 0) - cost;
-                    } else {
-                        todayProfit += (product.subtotal || 0); // Assume 100% profit if no cost data
-                    }
+                    totalStockOut += parseInt(product.quantity) || 0;
                 });
             }
         });
         
-        const profitMargin = todayRevenue > 0 ? (todayProfit / todayRevenue) * 100 : 0;
+        // Update stock cards
+        if (totalStockInEl) totalStockInEl.textContent = totalStockIn.toString();
+        if (totalStockOutEl) totalStockOutEl.textContent = totalStockOut.toString();
         
-        if (todayProfitEl) todayProfitEl.textContent = `GHS ${todayProfit.toFixed(2)}`;
+        // Calculate order metrics for remaining cards
+        const todayOrders = todaySales.length;
+        const todayRevenue = stats.today_sales || 0;
+        const avgOrderValue = todayOrders > 0 ? todayRevenue / todayOrders : 0;
+        
         if (todayOrdersEl) todayOrdersEl.textContent = todayOrders.toString();
         if (avgOrderValueEl) avgOrderValueEl.textContent = `GHS ${avgOrderValue.toFixed(2)}`;
         
@@ -909,6 +911,66 @@ class NaturalHairBusinessManager {
             const changeText = revenueChange >= 0 ? '+' : '';
             revenueChangeEl.textContent = `${changeText}${revenueChange.toFixed(1)}% vs yesterday`;
             revenueChangeEl.className = `kpi-change ${revenueChange >= 0 ? 'positive' : 'negative'}`;
+        }
+    }
+
+    // Update Revenue Analytics Cards (moved from dashboard)
+    updateRevenueAnalyticsCards() {
+        const sales = JSON.parse(localStorage.getItem('jmonic_sales') || '[]');
+        const products = JSON.parse(localStorage.getItem('jmonic_products') || '[]');
+        
+        const today = new Date().toDateString();
+        const todaySales = sales.filter(sale => 
+            new Date(sale.date || sale.created_at).toDateString() === today
+        );
+        
+        // Calculate today's revenue
+        const todayRevenue = todaySales.reduce((sum, sale) => sum + (sale.revenue || 0), 0);
+        
+        // Calculate today's profit
+        let todayProfit = 0;
+        todaySales.forEach(sale => {
+            if (sale.products && Array.isArray(sale.products)) {
+                sale.products.forEach(product => {
+                    const productData = products.find(p => p.id == product.id);
+                    if (productData && productData.cost_price) {
+                        const cost = (productData.cost_price * (product.quantity || 1));
+                        todayProfit += (product.subtotal || 0) - cost;
+                    } else {
+                        todayProfit += (product.subtotal || 0); // Assume 100% profit if no cost data
+                    }
+                });
+            }
+        });
+        
+        const profitMargin = todayRevenue > 0 ? (todayProfit / todayRevenue) * 100 : 0;
+        
+        // Update today's revenue card in revenue analytics
+        const todayRevenueEl = document.getElementById('todayRevenue');
+        const todayProfitEl = document.getElementById('todayProfit');
+        const profitMarginEl = document.getElementById('profitMargin');
+        const revenueChangeEl = document.getElementById('revenueChange');
+        
+        if (todayRevenueEl) todayRevenueEl.textContent = `GHS ${todayRevenue.toFixed(2)}`;
+        if (todayProfitEl) todayProfitEl.textContent = `GHS ${todayProfit.toFixed(2)}`;
+        if (profitMarginEl) {
+            profitMarginEl.textContent = `${profitMargin.toFixed(1)}% margin`;
+            profitMarginEl.className = `revenue-change ${profitMargin >= 20 ? 'positive' : profitMargin >= 10 ? 'neutral' : 'negative'}`;
+        }
+        
+        // Calculate revenue change vs yesterday
+        const yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
+        const yesterdaySales = sales.filter(sale => 
+            new Date(sale.date || sale.created_at).toDateString() === yesterday.toDateString()
+        );
+        const yesterdayRevenue = yesterdaySales.reduce((sum, sale) => sum + (sale.revenue || 0), 0);
+        const revenueChange = yesterdayRevenue > 0 ? ((todayRevenue - yesterdayRevenue) / yesterdayRevenue * 100) : 0;
+        
+        if (revenueChangeEl) {
+            const changeText = revenueChange >= 0 ? '+' : '';
+            revenueChangeEl.textContent = `${changeText}${revenueChange.toFixed(1)}% vs yesterday`;
+            revenueChangeEl.className = `revenue-change ${revenueChange >= 0 ? 'positive' : 'negative'}`;
         }
     }
     
@@ -3447,6 +3509,7 @@ function showSection(sectionName) {
         revenueAnalytics.loadRevenueAnalytics();
         if (businessManager) {
             businessManager.updateRevenueForecast(); // Update forecasting when revenue section is viewed
+            businessManager.updateRevenueAnalyticsCards(); // Update today's revenue/profit cards
         }
     } else if (sectionName === 'reports' && businessManager) {
         // Update inventory reports when reports section is viewed

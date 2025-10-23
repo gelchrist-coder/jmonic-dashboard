@@ -537,6 +537,8 @@ body {
 
 .kpi-card.revenue-card .kpi-icon { background: linear-gradient(135deg, #10b981, #059669); }
 .kpi-card.profit-card .kpi-icon { background: linear-gradient(135deg, #3b82f6, #1d4ed8); }
+.kpi-card.stock-in .kpi-icon { background: linear-gradient(135deg, #10b981, #059669); }
+.kpi-card.stock-out .kpi-icon { background: linear-gradient(135deg, #f59e0b, #d97706); }
 .kpi-card.orders-card .kpi-icon { background: linear-gradient(135deg, #8b5cf6, #7c3aed); }
 .kpi-card.avg-order-card .kpi-icon { background: linear-gradient(135deg, #f59e0b, #d97706); }
 .kpi-card.products-card .kpi-icon { background: linear-gradient(135deg, #ef4444, #dc2626); }

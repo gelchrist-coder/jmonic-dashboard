@@ -299,27 +299,27 @@
                 <section id="overview" class="content-section active">
                     <!-- Revenue & Business KPI Cards -->
                     <div class="kpi-grid">
-                        <div class="kpi-card revenue">
+                        <div class="kpi-card stock-in">
                             <div class="kpi-card-content">
                                 <div class="kpi-icon">
-                                    <i class="fas fa-money-bill-wave"></i>
+                                    <i class="fas fa-arrow-up"></i>
                                 </div>
                                 <div class="kpi-details">
-                                    <div class="kpi-title">Today's Revenue</div>
-                                    <div class="kpi-value" id="todayRevenue">GHS 0.00</div>
-                                    <div class="kpi-change positive" id="revenueChange">+0.0% vs yesterday</div>
+                                    <div class="kpi-title">Stock In (Total)</div>
+                                    <div class="kpi-value" id="totalStockIn">0</div>
+                                    <div class="kpi-change positive" id="stockInChange">Units received</div>
                                 </div>
                             </div>
                         </div>
-                        <div class="kpi-card profit">
+                        <div class="kpi-card stock-out">
                             <div class="kpi-card-content">
                                 <div class="kpi-icon">
-                                    <i class="fas fa-chart-line"></i>
+                                    <i class="fas fa-arrow-down"></i>
                                 </div>
                                 <div class="kpi-details">
-                                    <div class="kpi-title">Today's Profit</div>
-                                    <div class="kpi-value" id="todayProfit">GHS 0.00</div>
-                                    <div class="kpi-change neutral" id="profitMargin">0.0% margin</div>
+                                    <div class="kpi-title">Stock Out (Total)</div>
+                                    <div class="kpi-value" id="totalStockOut">0</div>
+                                    <div class="kpi-change negative" id="stockOutChange">Units sold</div>
                                 </div>
                             </div>
                         </div>
@@ -660,6 +660,26 @@
 
                     <!-- Revenue Overview Cards -->
                     <div class="revenue-overview-grid">
+                        <div class="revenue-card today-revenue">
+                            <div class="revenue-card-header">
+                                <h3>Today's Revenue</h3>
+                                <i class="fas fa-calendar-day"></i>
+                            </div>
+                            <div class="revenue-value" id="todayRevenue">GHS 0.00</div>
+                            <div class="revenue-change positive" id="revenueChange">+0.0% vs yesterday</div>
+                            <div class="revenue-chart-mini" id="todayRevenueChart"></div>
+                        </div>
+                        
+                        <div class="revenue-card today-profit">
+                            <div class="revenue-card-header">
+                                <h3>Today's Profit</h3>
+                                <i class="fas fa-chart-line"></i>
+                            </div>
+                            <div class="revenue-value" id="todayProfit">GHS 0.00</div>
+                            <div class="revenue-change neutral" id="profitMargin">0.0% margin</div>
+                            <div class="revenue-chart-mini" id="todayProfitChart"></div>
+                        </div>
+                        
                         <div class="revenue-card total-revenue">
                             <div class="revenue-card-header">
                                 <h3>Total Revenue</h3>
