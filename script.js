@@ -1986,6 +1986,7 @@ class NaturalHairBusinessManager {
     loadNotifications() {
         const notificationList = document.getElementById('notificationList');
         const notificationBadge = document.querySelector('.notification-badge');
+        const notificationCount = document.getElementById('notificationCount');
         
         if (!notificationList) return;
         
@@ -2010,11 +2011,15 @@ class NaturalHairBusinessManager {
         // Add low stock notifications
         lowStockProducts.forEach(product => {
             notifications.push({
+                id: `low-stock-${product.id}`,
                 type: 'warning',
                 icon: 'fa-exclamation-triangle',
                 title: 'Low Stock Alert',
                 message: `${product.name} is running low (${product.stock_quantity || 0} remaining)`,
-                time: 'Now'
+                time: 'Now',
+                category: 'alerts',
+                read: false,
+                priority: 'high'
             });
         });
         
@@ -2023,41 +2028,209 @@ class NaturalHairBusinessManager {
             const saleTime = new Date(sale.date || sale.created_at);
             const timeAgo = this.getTimeAgo(saleTime);
             notifications.push({
-                type: 'info',
+                id: `sale-${sale.id}`,
+                type: 'success',
                 icon: 'fa-shopping-cart',
                 title: 'New Sale',
-                message: `Sale ${sale.sale_id} completed - GHS ${parseFloat(sale.total_amount || sale.revenue || 0).toFixed(2)}`,
-                time: timeAgo
+                message: `Sale #${sale.id} completed - GHS ${parseFloat(sale.total_amount || sale.revenue || 0).toFixed(2)}`,
+                time: timeAgo,
+                category: 'sales',
+                read: false,
+                priority: 'normal'
             });
         });
         
-        // Update notification badge
+        // Add system notifications
+        if (products.length === 0) {
+            notifications.push({
+                id: 'welcome',
+                type: 'info',
+                icon: 'fa-info-circle',
+                title: 'Welcome to J\'MONIC Dashboard',
+                message: 'Get started by adding your first product to inventory.',
+                time: 'Getting Started',
+                category: 'system',
+                read: false,
+                priority: 'normal'
+            });
+        }
+        
+        // Update notification badges and count
+        const unreadCount = notifications.filter(n => !n.read).length;
+        
         if (notificationBadge) {
-            if (notifications.length > 0) {
-                notificationBadge.textContent = notifications.length;
+            if (unreadCount > 0) {
+                notificationBadge.textContent = unreadCount;
                 notificationBadge.style.display = 'block';
             } else {
                 notificationBadge.style.display = 'none';
             }
         }
         
+        if (notificationCount) {
+            notificationCount.textContent = unreadCount === 0 ? 'No new notifications' : 
+                unreadCount === 1 ? '1 new notification' : `${unreadCount} new notifications`;
+        }
+        
+        // Update mobile and sidebar badges
+        const mobileNotificationBadge = document.querySelector('.mobile-notification-badge');
+        const sidebarNotificationBadge = document.querySelector('.sidebar-notification-badge');
+        
+        [mobileNotificationBadge, sidebarNotificationBadge].forEach(badge => {
+            if (badge) {
+                if (unreadCount > 0) {
+                    badge.textContent = unreadCount;
+                    badge.style.display = 'inline-block';
+                } else {
+                    badge.style.display = 'none';
+                }
+            }
+        });
+        
+        // Store notifications for tab filtering
+        this.allNotifications = notifications;
+        this.currentNotificationTab = 'all';
+        
         // Display notifications
+        this.renderNotifications(notifications);
+        
+        // Initialize tab functionality
+        this.initializeNotificationTabs();
+    }
+    
+    renderNotifications(notifications) {
+        const notificationList = document.getElementById('notificationList');
+        if (!notificationList) return;
+        
         if (notifications.length === 0) {
-            notificationList.innerHTML = '<div class="no-notifications">No new notifications</div>';
-        } else {
-            notificationList.innerHTML = notifications.map(notification => `
-                <div class="notification-item">
-                    <div class="notification-icon ${notification.type}">
-                        <i class="fas ${notification.icon}"></i>
-                    </div>
-                    <div class="notification-content">
-                        <div class="notification-title">${notification.title}</div>
-                        <div class="notification-message">${notification.message}</div>
-                        <div class="notification-time">${notification.time}</div>
+            notificationList.innerHTML = `
+                <div class="no-notifications">
+                    <div class="empty-state">
+                        <i class="fas fa-bell-slash"></i>
+                        <h4>No notifications</h4>
+                        <p>You're all caught up!</p>
                     </div>
                 </div>
-            `).join('');
+            `;
+            return;
         }
+        
+        notificationList.innerHTML = notifications.map(notification => `
+            <div class="notification-item modern ${notification.read ? 'read' : 'unread'}" data-id="${notification.id}">
+                <div class="notification-icon ${notification.type}">
+                    <i class="fas ${notification.icon}"></i>
+                </div>
+                <div class="notification-content">
+                    <div class="notification-header">
+                        <div class="notification-title">${notification.title}</div>
+                        <div class="notification-time">${notification.time}</div>
+                    </div>
+                    <div class="notification-message">${notification.message}</div>
+                    ${notification.priority === 'high' ? '<div class="priority-indicator high">High Priority</div>' : ''}
+                </div>
+                <div class="notification-actions">
+                    ${!notification.read ? '<button class="mark-read-btn" onclick="businessManager.markNotificationAsRead(\'' + notification.id + '\')"><i class="fas fa-check"></i></button>' : ''}
+                    <button class="dismiss-btn" onclick="businessManager.dismissNotification(\'' + notification.id + '\')"><i class="fas fa-times"></i></button>
+                </div>
+            </div>
+        `).join('');
+    }
+    
+    initializeNotificationTabs() {
+        const tabButtons = document.querySelectorAll('.notification-tabs .tab-btn');
+        tabButtons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                // Update active tab
+                tabButtons.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                
+                // Filter notifications
+                const tab = btn.dataset.tab;
+                this.currentNotificationTab = tab;
+                this.filterNotifications(tab);
+            });
+        });
+    }
+    
+    filterNotifications(tab) {
+        let filteredNotifications = this.allNotifications || [];
+        
+        switch(tab) {
+            case 'unread':
+                filteredNotifications = filteredNotifications.filter(n => !n.read);
+                break;
+            case 'alerts':
+                filteredNotifications = filteredNotifications.filter(n => n.category === 'alerts' || n.priority === 'high');
+                break;
+            case 'all':
+            default:
+                // Show all notifications
+                break;
+        }
+        
+        this.renderNotifications(filteredNotifications);
+    }
+    
+    markNotificationAsRead(notificationId) {
+        if (this.allNotifications) {
+            const notification = this.allNotifications.find(n => n.id === notificationId);
+            if (notification) {
+                notification.read = true;
+                this.filterNotifications(this.currentNotificationTab);
+                this.updateNotificationCounts();
+            }
+        }
+    }
+    
+    markAllAsRead() {
+        if (this.allNotifications) {
+            this.allNotifications.forEach(n => n.read = true);
+            this.filterNotifications(this.currentNotificationTab);
+            this.updateNotificationCounts();
+        }
+    }
+    
+    dismissNotification(notificationId) {
+        if (this.allNotifications) {
+            this.allNotifications = this.allNotifications.filter(n => n.id !== notificationId);
+            this.filterNotifications(this.currentNotificationTab);
+            this.updateNotificationCounts();
+        }
+    }
+    
+    updateNotificationCounts() {
+        const unreadCount = this.allNotifications ? this.allNotifications.filter(n => !n.read).length : 0;
+        const notificationCount = document.getElementById('notificationCount');
+        const notificationBadge = document.querySelector('.notification-badge');
+        
+        if (notificationCount) {
+            notificationCount.textContent = unreadCount === 0 ? 'No new notifications' : 
+                unreadCount === 1 ? '1 new notification' : `${unreadCount} new notifications`;
+        }
+        
+        if (notificationBadge) {
+            if (unreadCount > 0) {
+                notificationBadge.textContent = unreadCount;
+                notificationBadge.style.display = 'block';
+            } else {
+                notificationBadge.style.display = 'none';
+            }
+        }
+        
+        // Update mobile and sidebar badges
+        const mobileNotificationBadge = document.querySelector('.mobile-notification-badge');
+        const sidebarNotificationBadge = document.querySelector('.sidebar-notification-badge');
+        
+        [mobileNotificationBadge, sidebarNotificationBadge].forEach(badge => {
+            if (badge) {
+                if (unreadCount > 0) {
+                    badge.textContent = unreadCount;
+                    badge.style.display = 'inline-block';
+                } else {
+                    badge.style.display = 'none';
+                }
+            }
+        });
     }
     
     getTimeAgo(date) {
@@ -2090,33 +2263,80 @@ class NaturalHairBusinessManager {
     loadSettings() {
         const settings = JSON.parse(localStorage.getItem('jmonic_settings') || '{}');
         
-        // Load saved settings
-        const themeSelector = document.getElementById('themeSelector');
+        // Load theme settings
+        const themeRadios = document.querySelectorAll('input[name="theme"]');
+        themeRadios.forEach(radio => {
+            radio.checked = radio.value === (settings.theme || 'light');
+        });
+        
+        // Load other settings
         const currencySelector = document.getElementById('currencySelector');
         const languageSelector = document.getElementById('languageSelector');
         const lowStockLevel = document.getElementById('lowStockLevel');
         const enableAnalytics = document.getElementById('enableAnalytics');
+        const lowStockAlerts = document.getElementById('lowStockAlerts');
+        const salesNotifications = document.getElementById('salesNotifications');
+        const autoBackup = document.getElementById('autoBackup');
         
-        if (themeSelector) themeSelector.value = settings.theme || 'light';
         if (currencySelector) currencySelector.value = settings.currency || 'GHS';
         if (languageSelector) languageSelector.value = settings.language || 'en';
         if (lowStockLevel) lowStockLevel.value = settings.lowStockLevel || 5;
         if (enableAnalytics) enableAnalytics.checked = settings.enableAnalytics !== false;
+        if (lowStockAlerts) lowStockAlerts.checked = settings.lowStockAlerts !== false;
+        if (salesNotifications) salesNotifications.checked = settings.salesNotifications !== false;
+        if (autoBackup) autoBackup.checked = settings.autoBackup !== false;
+        
+        // Initialize settings tabs
+        this.initializeSettingsTabs();
     }
     
     saveSettings() {
+        const themeRadio = document.querySelector('input[name="theme"]:checked');
         const settings = {
-            theme: document.getElementById('themeSelector')?.value || 'light',
+            theme: themeRadio?.value || 'light',
             currency: document.getElementById('currencySelector')?.value || 'GHS',
             language: document.getElementById('languageSelector')?.value || 'en',
             lowStockLevel: parseInt(document.getElementById('lowStockLevel')?.value) || 5,
-            enableAnalytics: document.getElementById('enableAnalytics')?.checked !== false
+            enableAnalytics: document.getElementById('enableAnalytics')?.checked !== false,
+            lowStockAlerts: document.getElementById('lowStockAlerts')?.checked !== false,
+            salesNotifications: document.getElementById('salesNotifications')?.checked !== false,
+            autoBackup: document.getElementById('autoBackup')?.checked !== false
         };
         
         localStorage.setItem('jmonic_settings', JSON.stringify(settings));
         this.applySettings(settings);
         this.showNotification('Settings saved successfully!', 'success');
-        this.closeAllDropdowns();
+        
+        // Add save animation
+        const saveBtn = document.querySelector('.footer-actions .btn-primary');
+        if (saveBtn) {
+            saveBtn.innerHTML = '<i class="fas fa-check"></i> Saved!';
+            setTimeout(() => {
+                saveBtn.innerHTML = '<i class="fas fa-save"></i> Save Changes';
+            }, 2000);
+        }
+    }
+    
+    initializeSettingsTabs() {
+        const settingsTabButtons = document.querySelectorAll('.settings-tabs .tab-btn');
+        const tabContents = document.querySelectorAll('.tab-content');
+        
+        settingsTabButtons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                // Update active tab button
+                settingsTabButtons.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                
+                // Show corresponding tab content
+                const tabName = btn.dataset.tab;
+                tabContents.forEach(content => {
+                    content.classList.remove('active');
+                    if (content.id === `${tabName}-tab`) {
+                        content.classList.add('active');
+                    }
+                });
+            });
+        });
     }
     
     resetSettings() {
