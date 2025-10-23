@@ -108,6 +108,19 @@ class NaturalHairBusinessManager {
             products.push(newProduct);
             localStorage.setItem('jmonic_products', JSON.stringify(products));
             
+            // Log initial stock as inventory transaction
+            if (newProduct.stock_quantity > 0) {
+                this.logInventoryTransaction(
+                    newProduct.id,
+                    newProduct.name,
+                    'purchase',
+                    newProduct.stock_quantity,
+                    0,
+                    newProduct.stock_quantity,
+                    'Initial stock entry'
+                );
+            }
+            
             // Update product stats if on products page
             setTimeout(() => {
                 if (document.querySelector('#products.active')) {
@@ -149,16 +162,28 @@ class NaturalHairBusinessManager {
                     product.stock_quantity -= saleProduct.quantity;
                     product.last_sold = new Date().toISOString();
                     
-                    // Add inventory transaction log
+                    // Add inventory transaction log to product
                     if (!product.transactions) product.transactions = [];
+                    const saleRef = `Sale #${Date.now().toString().slice(-5)}`;
                     product.transactions.push({
                         type: 'sale',
                         quantity: -saleProduct.quantity,
                         previous_stock: product.stock_quantity + saleProduct.quantity,
                         new_stock: product.stock_quantity,
                         date: new Date().toISOString(),
-                        reference: `Sale #${Date.now().toString().slice(-5)}`
+                        reference: saleRef
                     });
+                    
+                    // Also log to centralized inventory transactions
+                    this.logInventoryTransaction(
+                        product.id,
+                        product.name,
+                        'sale',
+                        -saleProduct.quantity,
+                        product.stock_quantity + saleProduct.quantity,
+                        product.stock_quantity,
+                        saleRef
+                    );
                     
                     // Store enhanced product info in sale
                     saleProducts.push({
@@ -313,6 +338,12 @@ class NaturalHairBusinessManager {
             this.updateProductStats(products);
             this.refreshLowStockData();
         }
+        
+        // Create sample inventory transactions if none exist
+        this.createSampleInventoryTransactions();
+        
+        // Update inventory reports and transaction log
+        this.updateInventoryReports();
     }
     
     // Refresh low stock data across the dashboard
@@ -2724,13 +2755,17 @@ class NaturalHairBusinessManager {
             if (sale.items && Array.isArray(sale.items)) {
                 sale.items.forEach(item => {
                     const product = products.find(p => p.id === item.product_id);
+                    const productName = product ? product.name : `Product ID: ${item.product_id}`;
+                    const currentStock = product ? (product.stock_quantity || 0) : 0;
+                    const quantity = parseInt(item.quantity) || 0;
+                    
                     allTransactions.push({
                         timestamp: sale.date || sale.created_at,
-                        product: product ? product.name : `Product ID: ${item.product_id}`,
+                        product: productName,
                         type: 'sale',
-                        quantity: -(parseInt(item.quantity) || 0),
-                        previousStock: null,
-                        newStock: null,
+                        quantity: -quantity,
+                        previousStock: currentStock + quantity,
+                        newStock: currentStock,
                         reference: `Sale #${sale.id}`
                     });
                 });
@@ -2829,6 +2864,79 @@ class NaturalHairBusinessManager {
         window.URL.revokeObjectURL(url);
         
         this.showNotification('Transaction log exported successfully', 'success');
+    }
+
+    // Inventory Transaction Management
+    logInventoryTransaction(productId, productName, type, quantity, previousStock, newStock, reference = '') {
+        const transactions = JSON.parse(localStorage.getItem('inventoryTransactions') || '[]');
+        
+        const transaction = {
+            id: Date.now() + Math.random(),
+            timestamp: new Date().toISOString(),
+            product_id: productId,
+            product: productName,
+            type: type, // 'purchase', 'sale', 'adjustment', 'return', 'transfer'
+            quantity: quantity,
+            previousStock: previousStock,
+            newStock: newStock,
+            reference: reference
+        };
+        
+        transactions.push(transaction);
+        localStorage.setItem('inventoryTransactions', JSON.stringify(transactions));
+        
+        console.log('Inventory transaction logged:', transaction);
+        return transaction;
+    }
+
+    // Create sample inventory transactions for demonstration
+    createSampleInventoryTransactions() {
+        const products = JSON.parse(localStorage.getItem('jmonic_products') || '[]');
+        if (products.length === 0) return;
+
+        const transactions = JSON.parse(localStorage.getItem('inventoryTransactions') || '[]');
+        if (transactions.length > 0) return; // Don't create duplicates
+
+        // Create some sample transactions for the past few days
+        const today = new Date();
+        
+        products.forEach((product, index) => {
+            const currentStock = product.stock_quantity || 0;
+            
+            // Add a purchase transaction (stock in) 3 days ago
+            const purchaseDate = new Date(today);
+            purchaseDate.setDate(today.getDate() - 3);
+            const purchaseQuantity = Math.floor(Math.random() * 20) + 10;
+            
+            this.logInventoryTransaction(
+                product.id,
+                product.name,
+                'purchase',
+                purchaseQuantity,
+                Math.max(0, currentStock - purchaseQuantity),
+                currentStock,
+                `PO-${1000 + index}`
+            );
+
+            // Add a stock adjustment transaction 1 day ago (if needed)
+            if (Math.random() > 0.7) {
+                const adjustmentDate = new Date(today);
+                adjustmentDate.setDate(today.getDate() - 1);
+                const adjustmentQuantity = Math.floor(Math.random() * 10) - 5; // Can be positive or negative
+                
+                this.logInventoryTransaction(
+                    product.id,
+                    product.name,
+                    'adjustment',
+                    adjustmentQuantity,
+                    currentStock,
+                    currentStock + adjustmentQuantity,
+                    'Stock count adjustment'
+                );
+            }
+        });
+        
+        console.log('Sample inventory transactions created');
     }
 
     // Revenue Forecasting Functions
@@ -3320,6 +3428,9 @@ function showSection(sectionName) {
         if (businessManager) {
             businessManager.updateRevenueForecast(); // Update forecasting when revenue section is viewed
         }
+    } else if (sectionName === 'reports' && businessManager) {
+        // Update inventory reports when reports section is viewed
+        businessManager.updateInventoryReports();
     }
     
     // Update header title and subtitle
