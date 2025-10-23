@@ -13,6 +13,10 @@ class NaturalHairBusinessManager {
         console.log('J\'MONIC ENTERPRISE System Initializing...');
         console.log('API Base URL:', this.apiBase);
         
+        // Initialize settings first to ensure they're always available
+        this.loadSettings();
+        this.initializeHeaderDropdowns();
+        
         // First test the connection
         try {
             console.log('Testing API connection...');
@@ -1922,8 +1926,10 @@ class NaturalHairBusinessManager {
             });
         }
         
-        // Delete button in settings dropdown
+        // Delete button in settings dropdown (both variants)
         const deleteDataBtn = document.getElementById('deleteDataBtn');
+        const deleteDataBtnDash = document.getElementById('deleteDataBtn-dash');
+        
         if (deleteDataBtn) {
             deleteDataBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
@@ -1932,8 +1938,23 @@ class NaturalHairBusinessManager {
             });
         }
         
-        // Load initial notifications
+        if (deleteDataBtnDash) {
+            deleteDataBtnDash.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.clearAllData();
+                this.closeAllDropdowns();
+            });
+        }
+        
+        // Load initial notifications and settings
         this.loadNotifications();
+        this.loadSettings();
+        
+        // Ensure delete buttons are working
+        this.initializeDeleteButtons();
+        
+        // Activate settings dropdown functionality immediately
+        console.log('✅ Settings functionality activated');
     }
     
     toggleDropdown(type) {
@@ -1981,6 +2002,26 @@ class NaturalHairBusinessManager {
         // Hide backdrop
         const backdrop = document.getElementById('dropdownBackdrop');
         if (backdrop) backdrop.style.display = 'none';
+    }
+    
+    initializeDeleteButtons() {
+        // Ensure all delete buttons work properly
+        const deleteButtons = [
+            document.getElementById('deleteDataBtn'),
+            document.getElementById('deleteDataBtn-dash')
+        ];
+        
+        deleteButtons.forEach(btn => {
+            if (btn && !btn.dataset.initialized) {
+                btn.dataset.initialized = 'true';
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    this.clearAllData();
+                    this.closeAllDropdowns();
+                });
+                console.log('✅ Delete button initialized:', btn.id);
+            }
+        });
     }
     
     loadNotifications() {
@@ -3936,6 +3977,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (businessManager) {
             businessManager.refreshLowStockData();
             businessManager.initializeHeaderDropdowns();
+            businessManager.loadSettings(); // Activate settings immediately
             businessManager.updateInventoryReports();
             businessManager.updateRevenueForecast();
             
@@ -3955,10 +3997,46 @@ document.addEventListener('DOMContentLoaded', function() {
     }, 1500);
     window.deleteProduct = deleteProduct;
     
+    // Expose settings activation function globally
+    window.showSettings = function() {
+        if (businessManager) {
+            businessManager.toggleDropdown('settings');
+            console.log('Settings dropdown opened');
+        }
+    };
+    
+    window.activateSettings = function() {
+        if (businessManager) {
+            businessManager.loadSettings();
+            businessManager.initializeHeaderDropdowns();
+            console.log('✅ Settings activated successfully!');
+        }
+    };
+    
+    // Expose delete functionality globally
+    window.clearAllData = function() {
+        if (businessManager) {
+            businessManager.clearAllData();
+        } else {
+            const confirmClear = confirm('Are you sure you want to clear all data? This action cannot be undone.');
+            if (confirmClear) {
+                localStorage.removeItem('jmonic_products');
+                localStorage.removeItem('jmonic_sales');
+                localStorage.removeItem('jmonic_purchases');
+                localStorage.removeItem('inventoryTransactions');
+                location.reload();
+            }
+        }
+    };
+    
     console.log('Global functions exported:', {
         businessManager: typeof window.businessManager,
         openModal: typeof window.openModal,
-        closeModal: typeof window.closeModal
+        closeModal: typeof window.closeModal,
+        showSettings: typeof window.showSettings,
+        activateSettings: typeof window.activateSettings,
+        clearAllData: typeof window.clearAllData,
+        deleteProduct: typeof window.deleteProduct
     });
     
     // Add test function to verify JavaScript is working
@@ -4207,23 +4285,33 @@ function deleteProduct(productId) {
     if (confirm('Are you sure you want to delete this product? This action cannot be undone.')) {
         console.log('Deleting product:', productId);
         
-        // Get products from localStorage
-        const products = JSON.parse(localStorage.getItem('jmonic_products') || '[]');
-        
-        // Filter out the product to delete
-        const updatedProducts = products.filter(p => p.id != productId);
-        
-        // Save back to localStorage
-        localStorage.setItem('jmonic_products', JSON.stringify(updatedProducts));
-        
-        // Show success message
-        businessManager.showNotification('Product deleted successfully!', 'success');
-        
-        // Refresh the products table
-        businessManager.loadProductsInventory();
-        
-        // Refresh dashboard data
-        businessManager.loadDashboardData();
+        try {
+            // Get products from localStorage
+            const products = JSON.parse(localStorage.getItem('jmonic_products') || '[]');
+            
+            // Filter out the product to delete
+            const updatedProducts = products.filter(p => p.id != productId);
+            
+            // Save back to localStorage
+            localStorage.setItem('jmonic_products', JSON.stringify(updatedProducts));
+            
+            // Show success message
+            if (window.businessManager) {
+                window.businessManager.showNotification('Product deleted successfully!', 'success');
+                
+                // Refresh the products table
+                window.businessManager.loadProductsInventory();
+                
+                // Refresh dashboard data
+                window.businessManager.loadDashboardData();
+            } else {
+                alert('Product deleted successfully!');
+                location.reload(); // Fallback: reload page
+            }
+        } catch (error) {
+            console.error('Error deleting product:', error);
+            alert('Error deleting product. Please try again.');
+        }
     }
 }
 
