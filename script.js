@@ -121,6 +121,14 @@ class NaturalHairBusinessManager {
                 );
             }
             
+            // Debug: Check if product should be low stock
+            console.log('New product added:', {
+                name: newProduct.name,
+                stock: newProduct.stock_quantity,
+                reorderLevel: newProduct.reorder_level,
+                isLowStock: newProduct.stock_quantity <= newProduct.reorder_level
+            });
+            
             // Update product stats if on products page
             setTimeout(() => {
                 if (document.querySelector('#products.active')) {
@@ -259,9 +267,11 @@ class NaturalHairBusinessManager {
         );
         
         const todayRevenue = todaySales.reduce((sum, sale) => sum + sale.revenue, 0);
-        const lowStockProducts = products.filter(product => 
-            product.stock_quantity <= product.reorder_level
-        );
+        const lowStockProducts = products.filter(product => {
+            const stock = product.stock_quantity || 0;
+            const reorderLevel = product.reorder_level || product.reorderLevel || 5;
+            return stock <= reorderLevel;
+        });
         
         return {
             success: true,
@@ -302,7 +312,7 @@ class NaturalHairBusinessManager {
             
             const lowStockCount = products.filter(p => {
                 const stock = p.stock_quantity || 0;
-                const reorderLevel = p.reorderLevel || p.min_stock_level || 5;
+                const reorderLevel = p.reorder_level || p.reorderLevel || p.min_stock_level || 5;
                 return stock <= reorderLevel;
             }).length;
             
@@ -353,7 +363,7 @@ class NaturalHairBusinessManager {
         // Calculate low stock count
         const lowStockCount = products.filter(p => {
             const stock = p.stock_quantity || 0;
-            const reorderLevel = p.reorderLevel || p.min_stock_level || 5;
+            const reorderLevel = p.reorder_level || p.reorderLevel || p.min_stock_level || 5;
             return stock <= reorderLevel;
         }).length;
         
@@ -373,7 +383,7 @@ class NaturalHairBusinessManager {
     updateLowStockNotifications(products) {
         const lowStockProducts = products.filter(p => {
             const stock = p.stock_quantity || 0;
-            const reorderLevel = p.reorderLevel || p.min_stock_level || 5;
+            const reorderLevel = p.reorder_level || p.reorderLevel || p.min_stock_level || 5;
             return stock <= reorderLevel;
         });
         
@@ -2392,7 +2402,7 @@ class NaturalHairBusinessManager {
         const products = JSON.parse(localStorage.getItem('jmonic_products') || '[]');
         const lowStockProducts = products.filter(product => {
             const stock = product.stock_quantity || 0;
-            const reorderLevel = product.reorderLevel || product.min_stock_level || 5;
+            const reorderLevel = product.reorder_level || product.reorderLevel || product.min_stock_level || 5;
             return stock <= reorderLevel;
         });
 
@@ -2415,7 +2425,7 @@ class NaturalHairBusinessManager {
                 <td>
                     <span class="stock-count ${product.stock_quantity <= 5 ? 'out' : 'low'}">${product.stock_quantity}</span>
                 </td>
-                <td>${product.reorderLevel || product.min_stock_level || 5}</td>
+                <td>${product.reorder_level || product.reorderLevel || product.min_stock_level || 5}</td>
                 <td>-</td>
                 <td>
                     <button class="btn-primary" onclick="businessManager.showNotification('Reorder feature coming soon!', 'info')">
@@ -2708,7 +2718,7 @@ class NaturalHairBusinessManager {
         // Get stock alerts (low stock products)
         const lowStockProducts = products.filter(p => {
             const stock = p.stock_quantity || 0;
-            const reorderLevel = p.reorderLevel || p.min_stock_level || 5;
+            const reorderLevel = p.reorder_level || p.reorderLevel || p.min_stock_level || 5;
             return stock <= reorderLevel;
         });
         
