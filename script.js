@@ -2096,6 +2096,11 @@ class NaturalHairBusinessManager {
         
         // Initialize tab functionality
         this.initializeNotificationTabs();
+        
+        // Update dashboard if we're on notifications page
+        if (document.querySelector('#notifications.active')) {
+            this.updateNotificationsDashboard();
+        }
     }
     
     renderNotifications(notifications) {
@@ -2230,6 +2235,86 @@ class NaturalHairBusinessManager {
                     badge.style.display = 'none';
                 }
             }
+        });
+    }
+    
+    updateNotificationsDashboard() {
+        if (!this.allNotifications) return;
+        
+        // Update stats cards
+        const alertCount = this.allNotifications.filter(n => n.category === 'alerts' || n.priority === 'high').length;
+        const unreadCount = this.allNotifications.filter(n => !n.read).length;
+        const todayCount = this.allNotifications.filter(n => {
+            const notifDate = new Date(n.timestamp || Date.now());
+            const today = new Date();
+            return notifDate.toDateString() === today.toDateString();
+        }).length;
+        const priorityCount = this.allNotifications.filter(n => n.priority === 'high').length;
+        
+        const alertCountEl = document.getElementById('alertCount');
+        const unreadCountEl = document.getElementById('unreadCount');
+        const todayCountEl = document.getElementById('todayCount');
+        const priorityCountEl = document.getElementById('priorityCount');
+        
+        if (alertCountEl) alertCountEl.textContent = alertCount;
+        if (unreadCountEl) unreadCountEl.textContent = unreadCount;
+        if (todayCountEl) todayCountEl.textContent = todayCount;
+        if (priorityCountEl) priorityCountEl.textContent = priorityCount;
+        
+        // Update category panels
+        this.updateLowStockPanel();
+        this.updateRecentSalesPanel();
+        this.updateSystemUpdatesPanel();
+        this.updateAllNotificationsList();
+        
+        // Initialize filter tabs
+        this.initializeDashboardFilters();
+    }
+    
+    updateLowStockPanel() {
+        const panel = document.getElementById('lowStockPanel');
+        const badge = document.getElementById('lowStockBadge');
+        
+        if (!panel || !badge) return;
+        
+        const lowStockNotifications = this.allNotifications.filter(n => n.category === 'alerts');
+        badge.textContent = lowStockNotifications.length;
+        
+        if (lowStockNotifications.length === 0) {
+            panel.innerHTML = `
+                <div class="empty-state">
+                    <i class="fas fa-check-circle"></i>
+                    <p>All stock levels are healthy</p>
+                </div>
+            `;
+        } else {
+            panel.innerHTML = lowStockNotifications.map(n => `
+                <div class="notification-item-dashboard alert ${n.read ? 'read' : 'unread'}">
+                    <div class="notification-icon ${n.type}">
+                        <i class="fas ${n.icon}"></i>
+                    </div>
+                    <div class="notification-content">
+                        <div class="notification-title">${n.title}</div>
+                        <div class="notification-message">${n.message}</div>
+                        <div class="notification-time">${n.time}</div>
+                    </div>
+                </div>
+            `).join('');
+        }
+    }
+    
+    initializeDashboardFilters() {
+        const filterTabs = document.querySelectorAll('.filter-tab');
+        filterTabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                // Update active tab
+                filterTabs.forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                
+                // Filter and update list
+                const filter = tab.dataset.filter;
+                this.filterDashboardNotifications(filter);
+            });
         });
     }
     

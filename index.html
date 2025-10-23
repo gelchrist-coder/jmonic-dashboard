@@ -79,14 +79,14 @@
                     </a>
                 </li>
                 <li>
-                    <a href="#" id="mobileNotificationBtn" onclick="toggleNotifications()">
+                    <a href="#" onclick="navigateToSection('notifications')">
                         <i class="fas fa-bell"></i>
                         <span>Notifications</span>
                         <span class="mobile-notification-badge" style="display: none;">0</span>
                     </a>
                 </li>
                 <li>
-                    <a href="#" id="mobileSettingsBtn" onclick="toggleSettings()">
+                    <a href="#" onclick="navigateToSection('settings')">
                         <i class="fas fa-cog"></i>
                         <span>Settings</span>
                     </a>
@@ -139,14 +139,14 @@
                     </a>
                 </li>
                 <li>
-                    <a href="#" id="sidebarNotificationBtn">
+                    <a href="#" data-section="notifications">
                         <i class="fas fa-bell"></i>
                         <span>Notifications</span>
                         <span class="sidebar-notification-badge" style="display: none;">0</span>
                     </a>
                 </li>
                 <li>
-                    <a href="#" id="sidebarSettingsBtn">
+                    <a href="#" data-section="settings">
                         <i class="fas fa-cog"></i>
                         <span>Settings</span>
                     </a>
@@ -1560,9 +1560,309 @@
                     </div>
                 </section>
 
+                <!-- Notifications Dashboard Section -->
+                <section id="notifications" class="content-section">
+                    <div class="section-header">
+                        <h2><i class="fas fa-bell"></i> Notifications Center</h2>
+                        <div class="section-actions">
+                            <button class="btn-secondary" onclick="businessManager.markAllAsRead()">
+                                <i class="fas fa-check-double"></i> Mark All Read
+                            </button>
+                            <button class="btn-secondary" onclick="businessManager.clearNotifications()">
+                                <i class="fas fa-trash-alt"></i> Clear All
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Notification Stats Cards -->
+                    <div class="dashboard-cards">
+                        <div class="dashboard-card notification-stats">
+                            <div class="card-icon alerts">
+                                <i class="fas fa-exclamation-triangle"></i>
+                            </div>
+                            <div class="card-content">
+                                <h3 id="alertCount">0</h3>
+                                <p>Active Alerts</p>
+                            </div>
+                        </div>
+                        <div class="dashboard-card notification-stats">
+                            <div class="card-icon unread">
+                                <i class="fas fa-envelope"></i>
+                            </div>
+                            <div class="card-content">
+                                <h3 id="unreadCount">0</h3>
+                                <p>Unread Notifications</p>
+                            </div>
+                        </div>
+                        <div class="dashboard-card notification-stats">
+                            <div class="card-icon today">
+                                <i class="fas fa-clock"></i>
+                            </div>
+                            <div class="card-content">
+                                <h3 id="todayCount">0</h3>
+                                <p>Today's Updates</p>
+                            </div>
+                        </div>
+                        <div class="dashboard-card notification-stats">
+                            <div class="card-icon priority">
+                                <i class="fas fa-star"></i>
+                            </div>
+                            <div class="card-content">
+                                <h3 id="priorityCount">0</h3>
+                                <p>High Priority</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Notification Categories -->
+                    <div class="dashboard-grid">
+                        <!-- Low Stock Alerts -->
+                        <div class="dashboard-card">
+                            <div class="card-header">
+                                <h3><i class="fas fa-box-open"></i> Low Stock Alerts</h3>
+                                <span class="badge" id="lowStockBadge">0</span>
+                            </div>
+                            <div class="notification-panel" id="lowStockPanel">
+                                <div class="empty-state">
+                                    <i class="fas fa-check-circle"></i>
+                                    <p>All stock levels are healthy</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Recent Sales -->
+                        <div class="dashboard-card">
+                            <div class="card-header">
+                                <h3><i class="fas fa-shopping-cart"></i> Recent Sales</h3>
+                                <span class="badge" id="recentSalesBadge">0</span>
+                            </div>
+                            <div class="notification-panel" id="recentSalesPanel">
+                                <div class="empty-state">
+                                    <i class="fas fa-chart-line"></i>
+                                    <p>No recent sales to display</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- System Updates -->
+                        <div class="dashboard-card">
+                            <div class="card-header">
+                                <h3><i class="fas fa-cog"></i> System Updates</h3>
+                                <span class="badge" id="systemUpdatesBadge">0</span>
+                            </div>
+                            <div class="notification-panel" id="systemUpdatesPanel">
+                                <div class="empty-state">
+                                    <i class="fas fa-info-circle"></i>
+                                    <p>No system updates</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- All Notifications -->
+                        <div class="dashboard-card full-width">
+                            <div class="card-header">
+                                <h3><i class="fas fa-list"></i> All Notifications</h3>
+                                <div class="filter-tabs">
+                                    <button class="filter-tab active" data-filter="all">All</button>
+                                    <button class="filter-tab" data-filter="unread">Unread</button>
+                                    <button class="filter-tab" data-filter="alerts">Alerts</button>
+                                    <button class="filter-tab" data-filter="today">Today</button>
+                                </div>
+                            </div>
+                            <div class="notification-list-dashboard" id="allNotificationsList">
+                                <div class="empty-state">
+                                    <i class="fas fa-bell-slash"></i>
+                                    <h4>No notifications</h4>
+                                    <p>You're all caught up!</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Settings Dashboard Section -->
                 <section id="settings" class="content-section">
-                    <h2>Settings</h2>
-                    <p>Settings panel coming soon...</p>
+                    <div class="section-header">
+                        <h2><i class="fas fa-cog"></i> Settings & Preferences</h2>
+                        <div class="section-actions">
+                            <button class="btn-secondary" onclick="businessManager.resetSettings()">
+                                <i class="fas fa-undo"></i> Reset to Default
+                            </button>
+                            <button class="btn-primary" onclick="businessManager.saveSettings()">
+                                <i class="fas fa-save"></i> Save Changes
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Settings Categories -->
+                    <div class="dashboard-grid">
+                        <!-- Appearance Settings -->
+                        <div class="dashboard-card">
+                            <div class="card-header">
+                                <h3><i class="fas fa-palette"></i> Appearance</h3>
+                            </div>
+                            <div class="settings-panel">
+                                <div class="setting-group">
+                                    <label class="setting-label">Theme Preference</label>
+                                    <div class="theme-selector-dashboard">
+                                        <input type="radio" id="theme-light-dash" name="theme-dash" value="light" checked>
+                                        <label for="theme-light-dash" class="theme-card">
+                                            <i class="fas fa-sun"></i>
+                                            <span>Light</span>
+                                        </label>
+                                        <input type="radio" id="theme-dark-dash" name="theme-dash" value="dark">
+                                        <label for="theme-dark-dash" class="theme-card">
+                                            <i class="fas fa-moon"></i>
+                                            <span>Dark</span>
+                                        </label>
+                                        <input type="radio" id="theme-auto-dash" name="theme-dash" value="auto">
+                                        <label for="theme-auto-dash" class="theme-card">
+                                            <i class="fas fa-adjust"></i>
+                                            <span>Auto</span>
+                                        </label>
+                                    </div>
+                                </div>
+                                
+                                <div class="setting-group">
+                                    <label class="setting-label">Currency</label>
+                                    <select id="currencySelector-dash" class="dashboard-select">
+                                        <option value="GHS">🇬🇭 Ghana Cedi (GHS)</option>
+                                        <option value="USD">🇺🇸 US Dollar (USD)</option>
+                                        <option value="EUR">🇪🇺 Euro (EUR)</option>
+                                        <option value="GBP">🇬🇧 British Pound (GBP)</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Business Settings -->
+                        <div class="dashboard-card">
+                            <div class="card-header">
+                                <h3><i class="fas fa-store"></i> Business Settings</h3>
+                            </div>
+                            <div class="settings-panel">
+                                <div class="setting-group">
+                                    <label class="setting-label">Business Name</label>
+                                    <input type="text" id="businessName" class="dashboard-input" placeholder="J'MONIC ENTERPRISE">
+                                </div>
+                                
+                                <div class="setting-group">
+                                    <label class="setting-label">Language</label>
+                                    <select id="languageSelector-dash" class="dashboard-select">
+                                        <option value="en">🇺🇸 English</option>
+                                        <option value="tw">🇬🇭 Twi</option>
+                                        <option value="fr">🇫🇷 French</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="setting-group">
+                                    <label class="setting-label">Time Zone</label>
+                                    <select id="timezoneSelector" class="dashboard-select">
+                                        <option value="Africa/Accra">GMT (Accra)</option>
+                                        <option value="America/New_York">EST (New York)</option>
+                                        <option value="Europe/London">GMT (London)</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Notification Preferences -->
+                        <div class="dashboard-card">
+                            <div class="card-header">
+                                <h3><i class="fas fa-bell"></i> Notifications</h3>
+                            </div>
+                            <div class="settings-panel">
+                                <div class="setting-group">
+                                    <div class="setting-toggle">
+                                        <label class="setting-label">Low Stock Alerts</label>
+                                        <div class="toggle-switch-dashboard">
+                                            <input type="checkbox" id="lowStockAlerts-dash" checked>
+                                            <label for="lowStockAlerts-dash"></label>
+                                        </div>
+                                    </div>
+                                    <span class="setting-description">Get notified when inventory runs low</span>
+                                </div>
+                                
+                                <div class="setting-group">
+                                    <label class="setting-label">Alert Threshold</label>
+                                    <div class="number-input-dashboard">
+                                        <input type="number" id="lowStockLevel-dash" min="1" max="100" value="5">
+                                        <span class="input-suffix">units</span>
+                                    </div>
+                                </div>
+                                
+                                <div class="setting-group">
+                                    <div class="setting-toggle">
+                                        <label class="setting-label">Sales Notifications</label>
+                                        <div class="toggle-switch-dashboard">
+                                            <input type="checkbox" id="salesNotifications-dash" checked>
+                                            <label for="salesNotifications-dash"></label>
+                                        </div>
+                                    </div>
+                                    <span class="setting-description">Get notified about new sales</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Advanced Settings -->
+                        <div class="dashboard-card">
+                            <div class="card-header">
+                                <h3><i class="fas fa-tools"></i> Advanced</h3>
+                            </div>
+                            <div class="settings-panel">
+                                <div class="setting-group">
+                                    <div class="setting-toggle">
+                                        <label class="setting-label">Analytics Tracking</label>
+                                        <div class="toggle-switch-dashboard">
+                                            <input type="checkbox" id="enableAnalytics-dash" checked>
+                                            <label for="enableAnalytics-dash"></label>
+                                        </div>
+                                    </div>
+                                    <span class="setting-description">Track performance metrics</span>
+                                </div>
+                                
+                                <div class="setting-group">
+                                    <div class="setting-toggle">
+                                        <label class="setting-label">Auto Backup</label>
+                                        <div class="toggle-switch-dashboard">
+                                            <input type="checkbox" id="autoBackup-dash" checked>
+                                            <label for="autoBackup-dash"></label>
+                                        </div>
+                                    </div>
+                                    <span class="setting-description">Automatically backup your data</span>
+                                </div>
+                                
+                                <div class="setting-group">
+                                    <label class="setting-label">Backup Frequency</label>
+                                    <select id="backupFrequency" class="dashboard-select">
+                                        <option value="daily">Daily</option>
+                                        <option value="weekly">Weekly</option>
+                                        <option value="monthly">Monthly</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Danger Zone -->
+                        <div class="dashboard-card danger-zone-card">
+                            <div class="card-header danger">
+                                <h3><i class="fas fa-exclamation-triangle"></i> Danger Zone</h3>
+                            </div>
+                            <div class="settings-panel">
+                                <div class="danger-warning">
+                                    <i class="fas fa-warning"></i>
+                                    <div>
+                                        <h4>Clear All Data</h4>
+                                        <p>This will permanently delete all your business data including products, sales, and reports. This action cannot be undone.</p>
+                                    </div>
+                                </div>
+                                <button class="btn-danger-dashboard" id="deleteDataBtn-dash">
+                                    <i class="fas fa-trash"></i>
+                                    Clear All Data
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                 </section>
             </div>
         </main>
