@@ -2495,7 +2495,7 @@ class NaturalHairBusinessManager {
                 <td>${product.reorder_level || product.reorderLevel || product.min_stock_level || 5}</td>
                 <td>-</td>
                 <td>
-                    <button class="btn-primary" onclick="businessManager.showNotification('Reorder feature coming soon!', 'info')">
+                    <button class="btn-primary" onclick="showSection('products'); openAddProductModal();">
                         <i class="fas fa-shopping-cart"></i> Reorder
                     </button>
                 </td>
