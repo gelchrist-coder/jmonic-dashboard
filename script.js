@@ -2685,6 +2685,11 @@ class NaturalHairBusinessManager {
         const today = new Date();
         today.setHours(0, 0, 0, 0);
         
+        console.log('Updating inventory stats with', sales.length, 'sales records');
+        if (sales.length > 0) {
+            console.log('Sample sale structure:', sales[0]);
+        }
+        
         // Calculate today's stock movements
         let stockInToday = 0;
         let stockOutToday = 0;
@@ -2698,12 +2703,16 @@ class NaturalHairBusinessManager {
         });
         
         todaySales.forEach(sale => {
-            if (sale.items && Array.isArray(sale.items)) {
-                sale.items.forEach(item => {
-                    stockOutToday += parseInt(item.quantity) || 0;
+            if (sale.products && Array.isArray(sale.products)) {
+                sale.products.forEach(product => {
+                    const quantity = parseInt(product.quantity) || 0;
+                    stockOutToday += quantity;
+                    console.log('Processing sale product:', product.name, 'quantity:', quantity);
                 });
             }
         });
+        
+        console.log('Today sales found:', todaySales.length, 'Total stock out:', stockOutToday);
         
         // Get stock alerts (low stock products)
         const lowStockProducts = products.filter(p => {
@@ -2752,12 +2761,12 @@ class NaturalHairBusinessManager {
         
         // Add sales as transactions
         sales.forEach(sale => {
-            if (sale.items && Array.isArray(sale.items)) {
-                sale.items.forEach(item => {
-                    const product = products.find(p => p.id === item.product_id);
-                    const productName = product ? product.name : `Product ID: ${item.product_id}`;
-                    const currentStock = product ? (product.stock_quantity || 0) : 0;
-                    const quantity = parseInt(item.quantity) || 0;
+            if (sale.products && Array.isArray(sale.products)) {
+                sale.products.forEach(product => {
+                    const productData = products.find(p => p.id == product.id);
+                    const productName = product.name || (productData ? productData.name : `Product ID: ${product.id}`);
+                    const currentStock = productData ? (productData.stock_quantity || 0) : 0;
+                    const quantity = parseInt(product.quantity) || 0;
                     
                     allTransactions.push({
                         timestamp: sale.date || sale.created_at,
