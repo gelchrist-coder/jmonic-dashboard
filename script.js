@@ -2348,14 +2348,15 @@ class NaturalHairBusinessManager {
     loadSettings() {
         const settings = JSON.parse(localStorage.getItem('jmonic_settings') || '{}');
         
-        // Load theme settings
-        const themeRadios = document.querySelectorAll('input[name="theme"]');
+        // Load theme settings for both selectors
+        const themeRadios = document.querySelectorAll('input[name="theme"], input[name="theme-dash"]');
         themeRadios.forEach(radio => {
             radio.checked = radio.value === (settings.theme || 'light');
         });
         
         // Load other settings
         const currencySelector = document.getElementById('currencySelector');
+        const currencySelectorDash = document.getElementById('currencySelector-dash');
         const languageSelector = document.getElementById('languageSelector');
         const lowStockLevel = document.getElementById('lowStockLevel');
         const enableAnalytics = document.getElementById('enableAnalytics');
@@ -2364,6 +2365,7 @@ class NaturalHairBusinessManager {
         const autoBackup = document.getElementById('autoBackup');
         
         if (currencySelector) currencySelector.value = settings.currency || 'GHS';
+        if (currencySelectorDash) currencySelectorDash.value = settings.currency || 'GHS';
         if (languageSelector) languageSelector.value = settings.language || 'en';
         if (lowStockLevel) lowStockLevel.value = settings.lowStockLevel || 5;
         if (enableAnalytics) enableAnalytics.checked = settings.enableAnalytics !== false;
@@ -2371,15 +2373,25 @@ class NaturalHairBusinessManager {
         if (salesNotifications) salesNotifications.checked = settings.salesNotifications !== false;
         if (autoBackup) autoBackup.checked = settings.autoBackup !== false;
         
+        // Apply theme immediately
+        this.applyTheme(settings.theme || 'light');
+        
         // Initialize settings tabs
         this.initializeSettingsTabs();
+        
+        // Add theme change event listeners
+        this.initializeThemeHandlers();
     }
     
     saveSettings() {
-        const themeRadio = document.querySelector('input[name="theme"]:checked');
+        const themeRadio = document.querySelector('input[name="theme"]:checked') || 
+                          document.querySelector('input[name="theme-dash"]:checked');
+        const currency = document.getElementById('currencySelector')?.value || 
+                        document.getElementById('currencySelector-dash')?.value || 'GHS';
+        
         const settings = {
             theme: themeRadio?.value || 'light',
-            currency: document.getElementById('currencySelector')?.value || 'GHS',
+            currency: currency,
             language: document.getElementById('languageSelector')?.value || 'en',
             lowStockLevel: parseInt(document.getElementById('lowStockLevel')?.value) || 5,
             enableAnalytics: document.getElementById('enableAnalytics')?.checked !== false,
@@ -2398,6 +2410,64 @@ class NaturalHairBusinessManager {
             saveBtn.innerHTML = '<i class="fas fa-check"></i> Saved!';
             setTimeout(() => {
                 saveBtn.innerHTML = '<i class="fas fa-save"></i> Save Changes';
+            }, 2000);
+        }
+    }
+    
+    resetSettings() {
+        // Reset to default settings
+        const defaultSettings = {
+            theme: 'light',
+            currency: 'GHS',
+            language: 'en',
+            lowStockLevel: 5,
+            enableAnalytics: true,
+            lowStockAlerts: true,
+            salesNotifications: true,
+            autoBackup: true
+        };
+        
+        // Apply default settings to UI
+        const themeInputs = document.querySelectorAll('input[name="theme"], input[name="theme-dash"]');
+        themeInputs.forEach(input => {
+            input.checked = input.value === defaultSettings.theme;
+        });
+        
+        const currencySelector = document.getElementById('currencySelector');
+        const currencySelectorDash = document.getElementById('currencySelector-dash');
+        const languageSelector = document.getElementById('languageSelector');
+        const lowStockLevel = document.getElementById('lowStockLevel');
+        const enableAnalytics = document.getElementById('enableAnalytics');
+        const lowStockAlerts = document.getElementById('lowStockAlerts');
+        const salesNotifications = document.getElementById('salesNotifications');
+        const autoBackup = document.getElementById('autoBackup');
+        
+        if (currencySelector) currencySelector.value = defaultSettings.currency;
+        if (currencySelectorDash) currencySelectorDash.value = defaultSettings.currency;
+        if (languageSelector) languageSelector.value = defaultSettings.language;
+        if (lowStockLevel) lowStockLevel.value = defaultSettings.lowStockLevel;
+        if (enableAnalytics) enableAnalytics.checked = defaultSettings.enableAnalytics;
+        if (lowStockAlerts) lowStockAlerts.checked = defaultSettings.lowStockAlerts;
+        if (salesNotifications) salesNotifications.checked = defaultSettings.salesNotifications;
+        if (autoBackup) autoBackup.checked = defaultSettings.autoBackup;
+        
+        // Apply theme immediately using global function
+        if (typeof applyThemeGlobal === 'function') {
+            applyThemeGlobal(defaultSettings.theme);
+        }
+        
+        // Save the default settings
+        localStorage.setItem('jmonic_settings', JSON.stringify(defaultSettings));
+        this.applySettings(defaultSettings);
+        
+        this.showNotification('Settings reset to default successfully!', 'info');
+        
+        // Add reset animation
+        const resetBtn = document.querySelector('.footer-actions .btn-secondary');
+        if (resetBtn) {
+            resetBtn.innerHTML = '<i class="fas fa-check"></i> Reset!';
+            setTimeout(() => {
+                resetBtn.innerHTML = '<i class="fas fa-undo"></i> Reset to Default';
             }, 2000);
         }
     }
@@ -2441,11 +2511,7 @@ class NaturalHairBusinessManager {
     
     applySettings(settings) {
         // Apply theme
-        if (settings.theme === 'dark') {
-            document.body.classList.add('dark-theme');
-        } else {
-            document.body.classList.remove('dark-theme');
-        }
+        this.applyTheme(settings.theme || 'light');
         
         // Apply currency (this would need more implementation for full currency conversion)
         window.currentCurrency = settings.currency;
@@ -2455,6 +2521,97 @@ class NaturalHairBusinessManager {
         
         // Refresh data with new settings
         this.refreshLowStockData();
+    }
+    
+    applyTheme(theme) {
+        const body = document.body;
+        const html = document.documentElement;
+        
+        // Add smooth transition animation
+        body.classList.add('theme-changing');
+        
+        // Remove all theme classes
+        body.classList.remove('theme-light', 'theme-dark', 'theme-auto');
+        html.classList.remove('theme-light', 'theme-dark', 'theme-auto');
+        
+        if (theme === 'dark') {
+            body.classList.add('theme-dark');
+            html.classList.add('theme-dark');
+        } else if (theme === 'light') {
+            body.classList.add('theme-light');
+            html.classList.add('theme-light');
+        } else if (theme === 'auto') {
+            body.classList.add('theme-auto');
+            html.classList.add('theme-auto');
+            
+            // Check system preference
+            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            if (prefersDark) {
+                body.classList.add('theme-dark');
+                html.classList.add('theme-dark');
+            } else {
+                body.classList.add('theme-light');
+                html.classList.add('theme-light');
+            }
+        }
+        
+        // Remove animation class after transition
+        setTimeout(() => {
+            body.classList.remove('theme-changing');
+        }, 500);
+        
+        // Store theme preference
+        localStorage.setItem('jmonic_theme', theme);
+        
+        // Update theme preview in theme cards
+        this.updateThemePreview(theme);
+    }
+    
+    updateThemePreview(theme) {
+        // Add visual feedback to show which theme is active
+        const themeCards = document.querySelectorAll('.theme-card');
+        themeCards.forEach(card => {
+            const input = card.previousElementSibling;
+            if (input && input.value === theme) {
+                card.style.transform = 'scale(1.05)';
+                setTimeout(() => {
+                    card.style.transform = '';
+                }, 200);
+            }
+        });
+    }
+    
+    initializeThemeHandlers() {
+        // Add event listeners to all theme selectors
+        const themeInputs = document.querySelectorAll('input[name="theme"], input[name="theme-dash"]');
+        
+        themeInputs.forEach(input => {
+            input.addEventListener('change', (e) => {
+                if (e.target.checked) {
+                    const theme = e.target.value;
+                    this.applyTheme(theme);
+                    
+                    // Sync all theme selectors
+                    themeInputs.forEach(otherInput => {
+                        otherInput.checked = otherInput.value === theme;
+                    });
+                    
+                    // Save settings
+                    setTimeout(() => this.saveSettings(), 100);
+                    
+                    // Show theme change notification
+                    this.showNotification(`Theme changed to ${theme.charAt(0).toUpperCase() + theme.slice(1)}`, 'success');
+                }
+            });
+        });
+        
+        // Listen for system theme changes when in auto mode
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+            const currentTheme = localStorage.getItem('jmonic_theme') || 'light';
+            if (currentTheme === 'auto') {
+                this.applyTheme('auto');
+            }
+        });
     }
     
     updateLowStockAlerts(lowStockProducts) {
@@ -3758,6 +3915,10 @@ let businessManager;
 document.addEventListener('DOMContentLoaded', function() {
     console.log('DOM loaded, initializing business manager...');
     businessManager = new NaturalHairBusinessManager();
+    
+    // Initialize theme immediately
+    initializeTheme();
+    
     initializeEventListeners();
     setupFormHandlers();
     
@@ -5082,4 +5243,147 @@ function toggleSettings() {
         window.dashboardApp.loadSettings();
     }
     closeMobileSidebar();
+}
+
+// Theme Management Functions
+function initializeTheme() {
+    // Get saved theme or default to light
+    const savedTheme = localStorage.getItem('jmonic_theme') || 'light';
+    
+    // Apply theme immediately
+    applyThemeGlobal(savedTheme);
+    
+    // Set up theme change listeners
+    setupThemeListeners();
+    
+    // Listen for system theme changes
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+        const currentTheme = localStorage.getItem('jmonic_theme') || 'light';
+        if (currentTheme === 'auto') {
+            applyThemeGlobal('auto');
+        }
+    });
+}
+
+function applyThemeGlobal(theme) {
+    const body = document.body;
+    const html = document.documentElement;
+    
+    // Add smooth transition animation
+    body.classList.add('theme-changing');
+    
+    // Remove all theme classes
+    body.classList.remove('theme-light', 'theme-dark', 'theme-auto');
+    html.classList.remove('theme-light', 'theme-dark', 'theme-auto');
+    
+    if (theme === 'dark') {
+        body.classList.add('theme-dark');
+        html.classList.add('theme-dark');
+    } else if (theme === 'light') {
+        body.classList.add('theme-light');
+        html.classList.add('theme-light');
+    } else if (theme === 'auto') {
+        body.classList.add('theme-auto');
+        html.classList.add('theme-auto');
+        
+        // Check system preference
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        if (prefersDark) {
+            body.classList.add('theme-dark');
+            html.classList.add('theme-dark');
+        } else {
+            body.classList.add('theme-light');
+            html.classList.add('theme-light');
+        }
+    }
+    
+    // Remove animation class after transition
+    setTimeout(() => {
+        body.classList.remove('theme-changing');
+    }, 500);
+    
+    // Store theme preference
+    localStorage.setItem('jmonic_theme', theme);
+    
+    // Update all theme selectors
+    updateThemeSelectors(theme);
+}
+
+function setupThemeListeners() {
+    // Add event listeners to all theme selectors
+    const themeInputs = document.querySelectorAll('input[name="theme"], input[name="theme-dash"]');
+    
+    themeInputs.forEach(input => {
+        input.addEventListener('change', (e) => {
+            if (e.target.checked) {
+                const theme = e.target.value;
+                applyThemeGlobal(theme);
+                
+                // Show theme change notification
+                if (window.businessManager && typeof window.businessManager.showNotification === 'function') {
+                    window.businessManager.showNotification(
+                        `Theme changed to ${theme.charAt(0).toUpperCase() + theme.slice(1)}`, 
+                        'success'
+                    );
+                }
+            }
+        });
+    });
+}
+
+function updateThemeSelectors(theme) {
+    // Update all theme radio buttons
+    const themeInputs = document.querySelectorAll('input[name="theme"], input[name="theme-dash"]');
+    themeInputs.forEach(input => {
+        input.checked = input.value === theme;
+    });
+    
+    // Update theme indicator in header
+    updateThemeIndicator(theme);
+    
+    // Add visual feedback to theme cards
+    const themeCards = document.querySelectorAll('.theme-card');
+    themeCards.forEach(card => {
+        const input = card.previousElementSibling;
+        if (input && input.value === theme) {
+            card.style.transform = 'scale(1.05)';
+            setTimeout(() => {
+                card.style.transform = '';
+            }, 200);
+        }
+    });
+}
+
+function updateThemeIndicator(theme) {
+    const themeIcon = document.getElementById('themeIcon');
+    const themeIndicator = document.getElementById('themeIndicator');
+    
+    if (themeIcon && themeIndicator) {
+        // Update icon based on theme
+        themeIcon.className = theme === 'dark' ? 'fas fa-moon' : 
+                             theme === 'light' ? 'fas fa-sun' : 
+                             'fas fa-adjust';
+        
+        // Update title
+        themeIndicator.title = `Current Theme: ${theme.charAt(0).toUpperCase() + theme.slice(1)}`;
+        
+        // Add active state
+        themeIndicator.classList.add('active');
+        
+        // Add click handler to quickly open settings
+        themeIndicator.onclick = () => {
+            // Navigate to settings and open appearance tab
+            if (typeof navigateToSection === 'function') {
+                navigateToSection('settings');
+                
+                // Focus on appearance tab after a short delay
+                setTimeout(() => {
+                    const appearanceTab = document.querySelector('.tab-btn[data-tab="appearance"]');
+                    if (appearanceTab) {
+                        appearanceTab.click();
+                    }
+                }, 300);
+            }
+        };
+    }
 }
