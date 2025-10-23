@@ -367,11 +367,7 @@ class NaturalHairBusinessManager {
             return stock <= reorderLevel;
         }).length;
         
-        // Update the KPI card
-        const lowStockCountEl = document.getElementById('lowStockCount');
-        if (lowStockCountEl) {
-            lowStockCountEl.textContent = lowStockCount;
-        }
+        // Low stock card removed - now only shown in notifications
         
         // Update the low stock alerts table
         this.loadLowStockAlerts();
@@ -852,11 +848,10 @@ class NaturalHairBusinessManager {
         const todayOrdersEl = document.getElementById('todayOrders');
         const avgOrderValueEl = document.getElementById('avgOrderValue');
         const totalProductsEl = document.getElementById('totalProducts');
-        const lowStockCountEl = document.getElementById('lowStockCount');
         
         if (todayRevenueEl) todayRevenueEl.textContent = `GHS ${(stats.today_sales || 0).toFixed(2)}`;
         if (totalProductsEl) totalProductsEl.textContent = stats.total_products || 0;
-        if (lowStockCountEl) lowStockCountEl.textContent = stats.low_stock_count || 0;
+        // Low stock card removed - now only shown in notifications
         
         // Calculate additional metrics
         const sales = JSON.parse(localStorage.getItem('jmonic_sales') || '[]');
@@ -2374,9 +2369,7 @@ class NaturalHairBusinessManager {
         if (document.getElementById('inStockCount')) {
             document.getElementById('inStockCount').textContent = inStock;
         }
-        if (document.getElementById('lowStockCount')) {
-            document.getElementById('lowStockCount').textContent = lowStock;
-        }
+        // Low stock card removed - now only shown in notifications
         if (document.getElementById('outOfStockCount')) {
             document.getElementById('outOfStockCount').textContent = outOfStock;
         }
@@ -2600,7 +2593,6 @@ class NaturalHairBusinessManager {
 
         // Update the stat cards
         const totalProductsEl = document.getElementById('totalProductsCount');
-        const lowStockCountEl = document.getElementById('lowStockCount');
         const inventoryValueEl = document.getElementById('inventoryTotalValue');
         const categoriesCountEl = document.getElementById('categoriesCount');
 
@@ -2608,9 +2600,7 @@ class NaturalHairBusinessManager {
             totalProductsEl.textContent = totalProducts.toLocaleString();
         }
         
-        if (lowStockCountEl) {
-            lowStockCountEl.textContent = lowStockProducts.toString();
-        }
+        // Low stock card removed - now only shown in notifications
         
         if (inventoryValueEl) {
             inventoryValueEl.textContent = `GHS ${totalValue.toFixed(2)}`;

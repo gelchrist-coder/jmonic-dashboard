@@ -540,7 +540,6 @@ body {
 .kpi-card.orders-card .kpi-icon { background: linear-gradient(135deg, #8b5cf6, #7c3aed); }
 .kpi-card.avg-order-card .kpi-icon { background: linear-gradient(135deg, #f59e0b, #d97706); }
 .kpi-card.products-card .kpi-icon { background: linear-gradient(135deg, #ef4444, #dc2626); }
-.kpi-card.stock-card .kpi-icon { background: linear-gradient(135deg, #6b7280, #4b5563); }
 
 .kpi-change {
     font-size: 0.75rem;
@@ -1449,9 +1448,7 @@ body {
     background: linear-gradient(135deg, #8b5cf6, #7c3aed);
 }
 
-.stat-icon.low-stock-icon {
-    background: linear-gradient(135deg, var(--warning-color), #d97706);
-}
+
 
 .stat-icon.value-icon {
     background: linear-gradient(135deg, var(--success-color), #059669);
