@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # J'MONIC ENTERPRISE - Web Dashboard
 
 A modern, responsive web dashboard built with HTML, CSS, and JavaScript. This dashboard provides a comprehensive overview of business metrics, analytics, and management tools.
@@ -159,3 +160,6 @@ This project is open source and available under the MIT License.
 ---
 
 **J'MONIC ENTERPRISE Dashboard** - Built with ❤️ for modern business management.
+=======
+# jmonic-dashboard
+>>>>>>> 34b0a42d4a81f21c001392441e24f71fd198087b
