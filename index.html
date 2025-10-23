@@ -162,152 +162,26 @@
             </ul>
         </nav>
 
+        <!-- Floating Mobile Menu Button -->
+        <button class="floating-menu-btn mobile-only" onclick="toggleMobileSidebar()" aria-label="Toggle Menu">
+            <i class="fas fa-bars"></i>
+        </button>
+
+        <!-- Floating User Role Selector -->
+        <div class="floating-role-selector">
+            <div class="role-selector">
+                <label for="userRole">
+                    <i class="fas fa-user-shield"></i>
+                </label>
+                <select id="userRole" onchange="updateUserAccess()">
+                    <option value="admin">Admin</option>
+                    <option value="employee">Employee</option>
+                </select>
+            </div>
+        </div>
+
         <!-- Main Content -->
         <main class="main-content">
-            <!-- Header -->
-            <header class="dashboard-header">
-                <div class="header-left">
-                    <button class="sidebar-toggle" aria-label="Toggle Sidebar">
-                        <i class="fas fa-bars"></i>
-                    </button>
-                    <div class="header-title-section">
-                        <h1 id="page-title">J'MONIC ENTERPRISE Dashboard</h1>
-                        <p class="header-subtitle">Manage your products and sales</p>
-                    </div>
-                </div>
-                
-                <!-- User Role Selector -->
-                <div class="user-role-section">
-                    <div class="role-selector">
-                        <label for="userRole">Access Level:</label>
-                        <select id="userRole" onchange="updateUserAccess()">
-                            <option value="admin">Admin/Manager</option>
-                            <option value="employee">Employee</option>
-                        </select>
-                        <i class="fas fa-user-shield role-icon"></i>
-                    </div>
-                </div>
-                <div class="header-center">
-                    <div class="search-bar">
-                        <i class="fas fa-search"></i>
-                        <input type="text" placeholder="Search products, sales, or customers..." id="globalSearch">
-                        <div class="search-suggestions" id="searchSuggestions" style="display: none;">
-                            <!-- Search suggestions will appear here -->
-                        </div>
-                    </div>
-                </div>
-                <div class="header-right">
-                    <div class="header-actions">
-                        <button class="header-btn" title="Notifications" id="notificationBtn">
-                            <i class="fas fa-bell"></i>
-                            <span class="notification-badge" style="display: none;">0</span>
-                        </button>
-                        <button class="header-btn" title="Clear All Data" onclick="businessManager.clearAllData()" style="color: #e74c3c;">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                        <button class="header-btn" title="Quick Actions" id="quickActionsBtn">
-                            <i class="fas fa-plus-circle"></i>
-                        </button>
-                        <button class="header-btn" title="Settings" id="settingsBtn">
-                            <i class="fas fa-cog"></i>
-                        </button>
-                    </div>
-                    
-                    <!-- Notification Dropdown -->
-                    <div class="notification-dropdown" id="notificationDropdown" style="display: none;">
-                        <div class="dropdown-header">
-                            <h3><i class="fas fa-bell"></i> Notifications</h3>
-                            <button class="clear-notifications" onclick="businessManager.clearNotifications()">Clear All</button>
-                        </div>
-                        <div class="notification-list" id="notificationList">
-                            <div class="no-notifications">No new notifications</div>
-                        </div>
-                    </div>
-                    
-                    <!-- Quick Actions Dropdown -->
-                    <div class="quick-actions-dropdown" id="quickActionsDropdown" style="display: none;">
-                        <div class="dropdown-header">
-                            <h3><i class="fas fa-bolt"></i> Quick Actions</h3>
-                        </div>
-                        <div class="quick-actions-list">
-                            <button class="quick-action-item" onclick="openModal('addProductModal')">
-                                <i class="fas fa-plus"></i>
-                                <span>Add Product</span>
-                            </button>
-                            <button class="quick-action-item" onclick="openModal('addSaleModal')">
-                                <i class="fas fa-shopping-cart"></i>
-                                <span>Record Sale</span>
-                            </button>
-                            <button class="quick-action-item" onclick="showSection('inventory')">
-                                <i class="fas fa-boxes"></i>
-                                <span>View Inventory</span>
-                            </button>
-                            <button class="quick-action-item" onclick="showSection('sales')">
-                                <i class="fas fa-chart-line"></i>
-                                <span>View Sales</span>
-                            </button>
-                        </div>
-                    </div>
-                    
-                    <!-- Quick Settings Dropdown -->
-                    <div class="dropdown-backdrop" id="dropdownBackdrop" style="display: none;"></div>
-                    <div class="settings-dropdown" id="settingsDropdown" style="display: none;">
-                        <div class="dropdown-header">
-                            <h3><i class="fas fa-cog"></i> Quick Settings</h3>
-                            <button class="close-dropdown" onclick="businessManager.closeAllDropdowns()">
-                                <i class="fas fa-times"></i>
-                            </button>
-                        </div>
-                        <div class="settings-list">
-                            <div class="quick-setting-item" onclick="navigateToSection('settings')">
-                                <i class="fas fa-cog"></i>
-                                <span>All Settings</span>
-                                <i class="fas fa-arrow-right"></i>
-                            </div>
-                            <div class="quick-setting-item" onclick="navigateToSection('notifications')">
-                                <i class="fas fa-bell"></i>
-                                <span>Notifications</span>
-                                <i class="fas fa-arrow-right"></i>
-                            </div>
-                            <div class="quick-setting-item" onclick="showDeleteConfirmation()">
-                                <i class="fas fa-trash text-danger"></i>
-                                <span>Delete Data</span>
-                                <i class="fas fa-arrow-right"></i>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="user-profile">
-                        <div class="user-info">
-                            <span class="user-name">Business Owner</span>
-                            <span class="user-role">Administrator</span>
-                        </div>
-                        <div class="user-avatar" id="userAvatar">
-                            <i class="fas fa-user-circle"></i>
-                        </div>
-                        <div class="user-dropdown" id="userDropdown" style="display: none;">
-                            <div class="dropdown-item">
-                                <i class="fas fa-user"></i>
-                                <span>Profile Settings</span>
-                            </div>
-                            <div class="dropdown-item">
-                                <i class="fas fa-chart-bar"></i>
-                                <span>Business Reports</span>
-                            </div>
-                            <div class="dropdown-item">
-                                <i class="fas fa-download"></i>
-                                <span>Export Data</span>
-                            </div>
-                            <div class="dropdown-divider"></div>
-                            <div class="dropdown-item">
-                                <i class="fas fa-sign-out-alt"></i>
-                                <span>Sign Out</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </header>
-
             <!-- Dashboard Content -->
             <div class="dashboard-content">
                 <!-- Overview Section -->
