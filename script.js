@@ -2495,7 +2495,23 @@ class NaturalHairBusinessManager {
                 <td>${product.reorder_level || product.reorderLevel || product.min_stock_level || 5}</td>
                 <td>-</td>
                 <td>
-                    <button class="btn-primary" onclick="showSection('products'); openAddProductModal();">
+                    <button class="btn-primary" onclick="
+                        console.log('Reorder button clicked'); 
+                        try {
+                            showSection('products'); 
+                            setTimeout(() => { 
+                                if (typeof openAddProductModal === 'function') {
+                                    openAddProductModal();
+                                } else if (typeof openModal === 'function') {
+                                    openModal('addProductModal');
+                                } else {
+                                    console.error('Modal functions not found');
+                                }
+                            }, 100);
+                        } catch(e) { 
+                            console.error('Reorder error:', e); 
+                        }
+                    ">
                         <i class="fas fa-shopping-cart"></i> Reorder
                     </button>
                 </td>
