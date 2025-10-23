@@ -17,6 +17,7 @@
     --card-background: #ffffff;
     --text-primary: #1e293b;
     --text-secondary: #64748b;
+    --text-disabled: #94a3b8;
     --border-color: #e2e8f0;
     --sidebar-width: 260px;
     --header-height: 70px;
@@ -552,6 +553,322 @@ body {
 .kpi-change.positive { color: var(--success-color); }
 .kpi-change.negative { color: var(--danger-color); }
 .kpi-change.neutral { color: var(--text-secondary); }
+
+/* Access Control Styles */
+.user-role-section {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.role-selector {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: var(--card-background);
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+}
+
+.role-selector label {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+}
+
+.role-selector select {
+    background: transparent;
+    border: none;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    cursor: pointer;
+}
+
+.role-selector select:focus {
+    outline: none;
+}
+
+.role-icon {
+    color: var(--primary-color);
+    font-size: 1.1rem;
+}
+
+/* Restricted Navigation Items */
+.restricted-item.locked {
+    opacity: 0.5;
+    pointer-events: none;
+}
+
+.restricted-item.locked a {
+    cursor: not-allowed;
+    color: var(--text-disabled) !important;
+}
+
+.access-lock {
+    font-size: 0.75rem;
+    color: var(--warning-color);
+    margin-left: auto;
+}
+
+.restricted-item:not(.locked) .access-lock {
+    display: none;
+}
+
+/* Access Denied Modal */
+.access-denied-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+}
+
+.access-denied-modal {
+    background: var(--card-background);
+    border-radius: 12px;
+    padding: 2rem;
+    max-width: 400px;
+    text-align: center;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+    border: 1px solid var(--border-color);
+}
+
+.access-denied-icon {
+    font-size: 3rem;
+    color: var(--warning-color);
+    margin-bottom: 1rem;
+}
+
+.access-denied-modal h3 {
+    margin: 0 0 1rem 0;
+    color: var(--text-primary);
+}
+
+.access-denied-modal p {
+    margin: 0 0 1.5rem 0;
+    color: var(--text-secondary);
+    line-height: 1.5;
+}
+
+.access-denied-modal button {
+    background: var(--primary-color);
+    color: white;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+}
+
+.access-denied-modal button:hover {
+    background: var(--primary-hover);
+}
+
+/* Settings Page Styles */
+.settings-group {
+    margin-bottom: 2rem;
+}
+
+.settings-group-header {
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid var(--border-color);
+}
+
+.settings-group-header h3 {
+    margin: 0 0 0.5rem 0;
+    color: var(--text-primary);
+    font-size: 1.25rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.settings-group-header h3 i {
+    color: var(--primary-color);
+}
+
+.settings-group-header p {
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+}
+
+.settings-cards {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+}
+
+.settings-card {
+    background: var(--card-background);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 1.5rem;
+    transition: all 0.3s ease;
+}
+
+.settings-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+}
+
+.setting-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.setting-info h4 {
+    margin: 0 0 0.5rem 0;
+    color: var(--text-primary);
+    font-size: 1rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.setting-info h4 i {
+    color: var(--primary-color);
+    font-size: 0.9rem;
+}
+
+.setting-info p {
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+    line-height: 1.4;
+}
+
+/* Toggle Switch Styles */
+.toggle-switch {
+    position: relative;
+    display: inline-block;
+    width: 50px;
+    height: 26px;
+    cursor: pointer;
+}
+
+.toggle-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.toggle-slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #ccc;
+    transition: 0.3s;
+    border-radius: 26px;
+}
+
+.toggle-slider:before {
+    position: absolute;
+    content: "";
+    height: 20px;
+    width: 20px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    transition: 0.3s;
+    border-radius: 50%;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+input:checked + .toggle-slider {
+    background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
+}
+
+input:focus + .toggle-slider {
+    box-shadow: 0 0 1px var(--primary-color);
+}
+
+input:checked + .toggle-slider:before {
+    transform: translateX(24px);
+}
+
+/* Settings Actions */
+.settings-actions {
+    margin-top: 2rem;
+    padding-top: 2rem;
+    border-top: 2px solid var(--border-color);
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.settings-actions .btn {
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.3s ease;
+}
+
+.settings-actions .btn-primary {
+    background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
+    color: white;
+    border: none;
+}
+
+.settings-actions .btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(59, 130, 246, 0.3);
+}
+
+.settings-actions .btn-secondary {
+    background: var(--card-background);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+}
+
+.settings-actions .btn-secondary:hover {
+    background: var(--text-secondary);
+    color: white;
+    transform: translateY(-2px);
+}
+
+/* Mobile Responsive Settings */
+@media (max-width: 768px) {
+    .settings-cards {
+        grid-template-columns: 1fr;
+    }
+    
+    .setting-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+    }
+    
+    .toggle-switch {
+        align-self: flex-end;
+    }
+    
+    .settings-actions {
+        flex-direction: column;
+    }
+    
+    .settings-actions .btn {
+        justify-content: center;
+    }
+}
 
 /* Revenue Analytics Styles */
 .revenue-header {
