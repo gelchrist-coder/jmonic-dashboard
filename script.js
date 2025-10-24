@@ -1864,16 +1864,11 @@ class NaturalHairBusinessManager {
     // Header dropdown functionality
     initializeHeaderDropdowns() {
         const notificationBtn = document.getElementById('notificationBtn');
-        const quickActionsBtn = document.getElementById('quickActionsBtn');
-        const settingsBtn = document.getElementById('settingsBtn');
         
         // Sidebar dropdown buttons
         const sidebarNotificationBtn = document.getElementById('sidebarNotificationBtn');
-        const sidebarSettingsBtn = document.getElementById('sidebarSettingsBtn');
         
         const notificationDropdown = document.getElementById('notificationDropdown');
-        const quickActionsDropdown = document.getElementById('quickActionsDropdown');
-        const settingsDropdown = document.getElementById('settingsDropdown');
         
         // Close dropdowns when clicking outside
         document.addEventListener('click', (e) => {
@@ -1897,32 +1892,6 @@ class NaturalHairBusinessManager {
                 e.stopPropagation();
                 this.toggleDropdown('notification');
                 this.loadNotifications();
-            });
-        }
-        
-        // Quick actions button
-        if (quickActionsBtn) {
-            quickActionsBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                this.toggleDropdown('quickActions');
-            });
-        }
-        
-        // Settings button (header)
-        if (settingsBtn) {
-            settingsBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                this.toggleDropdown('settings');
-                this.loadSettings();
-            });
-        }
-        
-        // Sidebar settings button
-        if (sidebarSettingsBtn) {
-            sidebarSettingsBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                this.toggleDropdown('settings');
-                this.loadSettings();
             });
         }
         
@@ -1976,9 +1945,7 @@ class NaturalHairBusinessManager {
     
     toggleDropdown(type) {
         const dropdowns = {
-            notification: document.getElementById('notificationDropdown'),
-            quickActions: document.getElementById('quickActionsDropdown'),
-            settings: document.getElementById('settingsDropdown')
+            notification: document.getElementById('notificationDropdown')
         };
         
         // Create or get backdrop
@@ -2010,7 +1977,7 @@ class NaturalHairBusinessManager {
     }
     
     closeAllDropdowns() {
-        const dropdowns = ['notificationDropdown', 'quickActionsDropdown', 'settingsDropdown'];
+        const dropdowns = ['notificationDropdown'];
         dropdowns.forEach(id => {
             const dropdown = document.getElementById(id);
             if (dropdown) dropdown.style.display = 'none';
@@ -4066,8 +4033,8 @@ document.addEventListener('DOMContentLoaded', function() {
     // Expose settings activation function globally
     window.showSettings = function() {
         if (businessManager) {
-            businessManager.toggleDropdown('settings');
-            console.log('Settings dropdown opened');
+            businessManager.showSection('settings');
+            console.log('Settings section opened');
         }
     };
     
@@ -4434,20 +4401,6 @@ function initializeModernHeader() {
         updateNotificationBadge();
     }
     
-    // Quick Actions Button
-    const quickActionsBtn = document.getElementById('quickActionsBtn');
-    if (quickActionsBtn) {
-        quickActionsBtn.addEventListener('click', showQuickActions);
-    }
-    
-    // Settings Button
-    const settingsBtn = document.getElementById('settingsBtn');
-    if (settingsBtn) {
-        settingsBtn.addEventListener('click', () => {
-            businessManager.showNotification('Settings panel coming soon!', 'info');
-        });
-    }
-    
     // User Profile Dropdown
     const userAvatar = document.getElementById('userAvatar');
     const userDropdown = document.getElementById('userDropdown');
@@ -4573,56 +4526,6 @@ function showNotifications() {
     popup.style.boxShadow = 'var(--shadow-lg)';
     popup.style.minWidth = '300px';
     popup.style.maxWidth = '400px';
-    
-    document.body.appendChild(popup);
-    
-    // Remove popup after 5 seconds or on click outside
-    setTimeout(() => {
-        if (popup.parentNode) popup.parentNode.removeChild(popup);
-    }, 5000);
-    
-    document.addEventListener('click', function removePopup(e) {
-        if (!popup.contains(e.target)) {
-            if (popup.parentNode) popup.parentNode.removeChild(popup);
-            document.removeEventListener('click', removePopup);
-        }
-    });
-}
-
-function showQuickActions() {
-    const quickActions = [
-        { icon: 'fas fa-plus', title: 'Add Product', action: () => openModal('addProductModal') },
-        { icon: 'fas fa-cash-register', title: 'Record Sale', action: () => openModal('addSaleModal') },
-        { icon: 'fas fa-chart-bar', title: 'View Reports', action: () => showSection('reports') },
-        { icon: 'fas fa-download', title: 'Export Data', action: () => businessManager.showNotification('Export feature coming soon!', 'info') }
-    ];
-    
-    let quickActionContent = '<div class="quick-action-popup">';
-    quickActionContent += '<div class="quick-action-header">Quick Actions</div>';
-    quickActionContent += '<div class="quick-action-grid">';
-    
-    quickActions.forEach(action => {
-        quickActionContent += `
-            <div class="quick-action-item" onclick="(${action.action.toString()})(); this.parentElement.parentElement.parentElement.remove();">
-                <i class="${action.icon}"></i>
-                <span>${action.title}</span>
-            </div>
-        `;
-    });
-    
-    quickActionContent += '</div></div>';
-    
-    // Create temporary quick action popup
-    const popup = document.createElement('div');
-    popup.innerHTML = quickActionContent;
-    popup.style.position = 'fixed';
-    popup.style.top = '80px';
-    popup.style.right = '6rem';
-    popup.style.zIndex = '1001';
-    popup.style.background = 'var(--card-background)';
-    popup.style.border = '1px solid var(--border-color)';
-    popup.style.borderRadius = 'var(--radius-lg)';
-    popup.style.boxShadow = 'var(--shadow-lg)';
     
     document.body.appendChild(popup);
     
@@ -5401,8 +5304,8 @@ function toggleNotifications() {
 
 function toggleSettings() {
     console.log('Toggle settings from mobile sidebar');
-    if (window.dashboardApp && typeof window.dashboardApp.toggleDropdown === 'function') {
-        window.dashboardApp.toggleDropdown('settings');
+    if (window.dashboardApp && typeof window.dashboardApp.showSection === 'function') {
+        window.dashboardApp.showSection('settings');
         window.dashboardApp.loadSettings();
     }
     closeMobileSidebar();
@@ -5591,7 +5494,6 @@ setTimeout(() => {
         openModal: typeof window.openModal === 'function',
         closeModal: typeof window.closeModal === 'function',
         deleteProduct: typeof window.deleteProduct === 'function',
-        settingsActive: !!document.getElementById('settingsDropdown'),
         deleteButtonsPresent: !!(document.getElementById('deleteDataBtn') && document.getElementById('deleteDataBtn-dash'))
     };
     
