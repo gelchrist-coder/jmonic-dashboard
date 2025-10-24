@@ -3472,7 +3472,7 @@ class NaturalHairBusinessManager {
                     cursor: pointer;
                     transition: all 0.2s ease;
                 ">Cancel</button>
-                <button id="confirmClearData" onclick="console.log('🔥 ONCLICK ATTR FIRED'); if(window.businessManager){window.businessManager.performDataClear();}else if(window.directClearData){window.directClearData();}else{window.emergencyClearAllData();}" style="
+                <button id="confirmClearData" style="
                     padding: 0.75rem 1.5rem;
                     background: var(--danger-color);
                     border: 2px solid var(--danger-color);
@@ -3532,32 +3532,29 @@ class NaturalHairBusinessManager {
 
         if (confirmBtn) {
             console.log('✅ Confirm button found, adding event listener');
+            
+            // Single, robust event listener
             confirmBtn.addEventListener('click', (e) => {
                 e.preventDefault();
                 e.stopPropagation();
                 console.log('🔥 CONFIRM BUTTON CLICKED - User confirmed data clearing');
-                // Close modal immediately, then perform clear
-                this.closeClearDataModal();
-                // Use timeout to ensure modal is closed before clearing
-                setTimeout(() => {
-                    console.log('🔥 About to call performDataClear()');
+                console.log('🔥 Current this context:', !!this);
+                console.log('🔥 performDataClear method exists:', typeof this.performDataClear);
+                
+                // Call performDataClear directly - no need to close modal first as performDataClear handles it
+                try {
                     this.performDataClear();
-                }, 100);
+                } catch (error) {
+                    console.error('❌ Error calling performDataClear:', error);
+                    // Fallback to direct clearing
+                    if (confirm('Direct clear fallback - Continue?')) {
+                        localStorage.clear();
+                        location.reload();
+                    }
+                }
             });
             
-            // Also add onclick as backup
-            confirmBtn.onclick = (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                console.log('🔥 ONCLICK BACKUP - User confirmed data clearing');
-                this.closeClearDataModal();
-                setTimeout(() => {
-                    console.log('🔥 About to call performDataClear() via onclick');
-                    this.performDataClear();
-                }, 100);
-            };
-            
-            console.log('✅ Event listeners added to confirm button');
+            console.log('✅ Event listener added to confirm button');
         } else {
             console.error('❌ Confirm button not found!');
         }
