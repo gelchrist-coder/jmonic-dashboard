@@ -3351,12 +3351,28 @@ class NaturalHairBusinessManager {
     clearAllData() {
         console.log('🗑️ clearAllData() function called');
         
+        // Prevent multiple modal calls
+        if (this.isPerformingDataClear || this.currentClearDataModal) {
+            console.log('🚫 Clear data operation already in progress');
+            return;
+        }
+        
         // Create custom confirmation modal
         this.showDataClearConfirmation();
     }
 
     // Custom confirmation modal for data clearing
     showDataClearConfirmation() {
+        // Prevent multiple modals from opening
+        if (this.currentClearDataModal) {
+            console.log('Clear data modal already open, ignoring request');
+            return;
+        }
+
+        // Check for any existing modals and remove them
+        const existingModals = document.querySelectorAll('.modal-backdrop.danger-backdrop');
+        existingModals.forEach(modal => modal.remove());
+
         // Create modal backdrop
         const backdrop = document.createElement('div');
         backdrop.className = 'modal-backdrop danger-backdrop';
@@ -3471,29 +3487,53 @@ class NaturalHairBusinessManager {
         backdrop.appendChild(modal);
         document.body.appendChild(backdrop);
 
-        // Handle button clicks
+        // Store reference for cleanup
+        this.currentClearDataModal = backdrop;
+
+        // Handle button clicks with more robust event handling
         const cancelBtn = document.getElementById('cancelClearData');
         const confirmBtn = document.getElementById('confirmClearData');
 
-        cancelBtn.addEventListener('click', () => {
-            console.log('User cancelled data clearing');
-            backdrop.style.animation = 'fadeOut 0.3s ease';
-            setTimeout(() => backdrop.remove(), 300);
-        });
+        if (cancelBtn) {
+            cancelBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('User cancelled data clearing');
+                this.closeClearDataModal();
+            });
+        }
 
-        confirmBtn.addEventListener('click', () => {
-            this.performDataClear();
-            backdrop.remove();
-        });
+        if (confirmBtn) {
+            confirmBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('User confirmed data clearing');
+                // Close modal immediately, then perform clear
+                this.closeClearDataModal();
+                // Use timeout to ensure modal is closed before clearing
+                setTimeout(() => {
+                    this.performDataClear();
+                }, 100);
+            });
+        }
 
         // Close on backdrop click
         backdrop.addEventListener('click', (e) => {
             if (e.target === backdrop) {
-                console.log('User cancelled data clearing');
-                backdrop.style.animation = 'fadeOut 0.3s ease';
-                setTimeout(() => backdrop.remove(), 300);
+                console.log('User cancelled data clearing via backdrop click');
+                this.closeClearDataModal();
             }
         });
+
+        // Add keyboard support (ESC to cancel)
+        const handleKeyDown = (e) => {
+            if (e.key === 'Escape') {
+                console.log('User cancelled data clearing via ESC key');
+                this.closeClearDataModal();
+                document.removeEventListener('keydown', handleKeyDown);
+            }
+        };
+        document.addEventListener('keydown', handleKeyDown);
 
         // Add fadeOut animation
         style.textContent += `
@@ -3504,11 +3544,37 @@ class NaturalHairBusinessManager {
         `;
     }
 
+    // Helper method to properly close the modal
+    closeClearDataModal() {
+        if (this.currentClearDataModal) {
+            this.currentClearDataModal.style.animation = 'fadeOut 0.3s ease';
+            setTimeout(() => {
+                if (this.currentClearDataModal && this.currentClearDataModal.parentNode) {
+                    this.currentClearDataModal.remove();
+                }
+                this.currentClearDataModal = null;
+            }, 300);
+        }
+    }
+
     // Perform the actual data clearing
     performDataClear() {
+        // Prevent multiple clear operations
+        if (this.isPerformingDataClear) {
+            console.log('Data clear already in progress, ignoring request');
+            return;
+        }
+
+        this.isPerformingDataClear = true;
         console.log('User confirmed data clearing');
         
         try {
+            // Ensure modal is closed
+            if (this.currentClearDataModal) {
+                this.currentClearDataModal.remove();
+                this.currentClearDataModal = null;
+            }
+
             // Clear all localStorage data
             localStorage.removeItem('jmonic_products');
             localStorage.removeItem('jmonic_sales');
@@ -3529,6 +3595,7 @@ class NaturalHairBusinessManager {
         } catch (error) {
             console.error('❌ Error clearing data:', error);
             this.showNotification('❌ Error clearing data. Please try again.', 'error');
+            this.isPerformingDataClear = false; // Reset flag on error
         }
     }
 
@@ -4281,7 +4348,15 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Expose delete functionality globally with multiple access points
     window.clearAllData = function() {
+        // Prevent multiple simultaneous calls
+        if (window.clearDataInProgress) {
+            console.log('🚫 Clear data already in progress, ignoring call');
+            return;
+        }
+
+        window.clearDataInProgress = true;
         console.log('🌐 Global clearAllData called');
+        
         if (window.businessManager) {
             window.businessManager.clearAllData();
         } else {
@@ -4299,7 +4374,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 } catch (error) {
                     console.error('Error:', error);
                     alert('❌ Error clearing data.');
+                    window.clearDataInProgress = false; // Reset on error
                 }
+            } else {
+                window.clearDataInProgress = false; // Reset on cancel
             }
         }
     };
