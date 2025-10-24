@@ -4606,6 +4606,9 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log('🔍 Current clearDataInProgress state:', window.clearDataInProgress);
         console.log('🔍 businessManager exists:', !!window.businessManager);
         
+        // Add immediate test to see if function is being called
+        alert('Clear All Data button clicked! Check console for details.');
+        
         // Prevent multiple simultaneous calls
         if (window.clearDataInProgress) {
             console.log('🚫 Clear data already in progress, ignoring call');
