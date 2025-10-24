@@ -4104,7 +4104,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Cache buster - Force reload of cached content
     console.log('🔄 J\'MONIC Dashboard loaded - Version:', new Date().toISOString());
-    console.log('🧹 Quick Actions and Settings removed from header');
+    console.log('🧹 Settings removed from header - available only in sidebar');
     
     // Force remove any cached elements
     setTimeout(() => {
@@ -4144,7 +4144,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 z-index: 10000;
                 opacity: 0.9;
             `;
-            indicator.textContent = '✅ Updated - Quick Actions & Settings Removed';
+            indicator.textContent = '✅ Header Cleaned - Settings Moved to Sidebar';
             document.body.appendChild(indicator);
             
             setTimeout(() => {
