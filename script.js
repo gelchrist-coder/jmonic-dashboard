@@ -2203,65 +2203,34 @@ class NaturalHairBusinessManager {
             return stock <= reorderLevel;
         });
         
-        // Get recent sales for notifications
-        const sales = JSON.parse(localStorage.getItem('jmonic_sales') || '[]');
-        const recentSales = sales.filter(sale => {
-            const saleDate = new Date(sale.date || sale.created_at);
-            const hourAgo = new Date(Date.now() - 60 * 60 * 1000);
-            return saleDate > hourAgo;
-        });
-        
         let notifications = [];
         
-        // Add low stock notifications
+        // Add low stock notifications (simplified)
         lowStockProducts.forEach(product => {
             notifications.push({
                 id: `low-stock-${product.id}`,
                 type: 'warning',
                 icon: 'fa-exclamation-triangle',
-                title: 'Low Stock Alert',
-                message: `${product.name} is running low (${product.stock_quantity || 0} remaining)`,
-                time: 'Now',
-                category: 'alerts',
-                read: false,
-                priority: 'high'
+                title: `Low Stock: ${product.name}`,
+                message: `Only ${product.stock_quantity || 0} remaining`,
+                time: 'Now'
             });
         });
         
-        // Add recent sales notifications
-        recentSales.forEach(sale => {
-            const saleTime = new Date(sale.date || sale.created_at);
-            const timeAgo = this.getTimeAgo(saleTime);
-            notifications.push({
-                id: `sale-${sale.id}`,
-                type: 'success',
-                icon: 'fa-shopping-cart',
-                title: 'New Sale',
-                message: `Sale #${sale.id} completed - GHS ${parseFloat(sale.total_amount || sale.revenue || 0).toFixed(2)}`,
-                time: timeAgo,
-                category: 'sales',
-                read: false,
-                priority: 'normal'
-            });
-        });
-        
-        // Add system notifications
+        // Add welcome message if no products
         if (products.length === 0) {
             notifications.push({
                 id: 'welcome',
                 type: 'info',
                 icon: 'fa-info-circle',
                 title: 'Welcome to J\'MONIC Dashboard',
-                message: 'Get started by adding your first product to inventory.',
-                time: 'Getting Started',
-                category: 'system',
-                read: false,
-                priority: 'normal'
+                message: 'Add your first product to get started',
+                time: 'Getting Started'
             });
         }
         
-        // Update notification badges and count
-        const unreadCount = notifications.filter(n => !n.read).length;
+        // Update notification badge (simplified)
+        const unreadCount = notifications.length;
         
         if (notificationBadge) {
             if (unreadCount > 0) {
@@ -2273,42 +2242,15 @@ class NaturalHairBusinessManager {
         }
         
         if (notificationCount) {
-            notificationCount.textContent = unreadCount === 0 ? 'No new notifications' : 
-                unreadCount === 1 ? '1 new notification' : `${unreadCount} new notifications`;
+            notificationCount.textContent = unreadCount === 0 ? 'All good!' : 
+                unreadCount === 1 ? '1 alert' : `${unreadCount} alerts`;
         }
         
-        // Update mobile and sidebar badges
-        const mobileNotificationBadge = document.querySelector('.mobile-notification-badge');
-        const sidebarNotificationBadge = document.querySelector('.sidebar-notification-badge');
-        
-        [mobileNotificationBadge, sidebarNotificationBadge].forEach(badge => {
-            if (badge) {
-                if (unreadCount > 0) {
-                    badge.textContent = unreadCount;
-                    badge.style.display = 'inline-block';
-                } else {
-                    badge.style.display = 'none';
-                }
-            }
-        });
-        
-        // Store notifications for tab filtering
-        this.allNotifications = notifications;
-        this.currentNotificationTab = 'all';
-        
-        // Display notifications
-        this.renderNotifications(notifications);
-        
-        // Initialize tab functionality
-        this.initializeNotificationTabs();
-        
-        // Update dashboard if we're on notifications page
-        if (document.querySelector('#notifications.active')) {
-            this.updateNotificationsDashboard();
-        }
+        // Simple notification display
+        this.renderSimpleNotifications(notifications);
     }
     
-    renderNotifications(notifications) {
+    renderSimpleNotifications(notifications) {
         const notificationList = document.getElementById('notificationList');
         if (!notificationList) return;
         
@@ -2316,9 +2258,9 @@ class NaturalHairBusinessManager {
             notificationList.innerHTML = `
                 <div class="no-notifications">
                     <div class="empty-state">
-                        <i class="fas fa-bell-slash"></i>
-                        <h4>No notifications</h4>
-                        <p>You're all caught up!</p>
+                        <i class="fas fa-check-circle" style="color: #10b981; font-size: 3rem; margin-bottom: 1rem;"></i>
+                        <h3 style="color: var(--text-primary); margin-bottom: 0.5rem;">All Good!</h3>
+                        <p style="color: var(--text-secondary);">No alerts or issues to address</p>
                     </div>
                 </div>
             `;
@@ -2326,85 +2268,54 @@ class NaturalHairBusinessManager {
         }
         
         notificationList.innerHTML = notifications.map(notification => `
-            <div class="notification-item modern ${notification.read ? 'read' : 'unread'}" data-id="${notification.id}">
+            <div class="notification-item simple" data-id="${notification.id}">
                 <div class="notification-icon ${notification.type}">
                     <i class="fas ${notification.icon}"></i>
                 </div>
                 <div class="notification-content">
-                    <div class="notification-header">
-                        <div class="notification-title">${notification.title}</div>
-                        <div class="notification-time">${notification.time}</div>
-                    </div>
+                    <div class="notification-title">${notification.title}</div>
                     <div class="notification-message">${notification.message}</div>
-                    ${notification.priority === 'high' ? '<div class="priority-indicator high">High Priority</div>' : ''}
-                </div>
-                <div class="notification-actions">
-                    ${!notification.read ? '<button class="mark-read-btn" onclick="businessManager.markNotificationAsRead(\'' + notification.id + '\')"><i class="fas fa-check"></i></button>' : ''}
-                    <button class="dismiss-btn" onclick="businessManager.dismissNotification(\'' + notification.id + '\')"><i class="fas fa-times"></i></button>
+                    <div class="notification-time">${notification.time}</div>
                 </div>
             </div>
         `).join('');
     }
     
-    initializeNotificationTabs() {
-        const tabButtons = document.querySelectorAll('.notification-tabs .tab-btn');
-        tabButtons.forEach(btn => {
-            btn.addEventListener('click', () => {
-                // Update active tab
-                tabButtons.forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-                
-                // Filter notifications
-                const tab = btn.dataset.tab;
-                this.currentNotificationTab = tab;
-                this.filterNotifications(tab);
-            });
-        });
-    }
     
-    filterNotifications(tab) {
-        let filteredNotifications = this.allNotifications || [];
-        
-        switch(tab) {
-            case 'unread':
-                filteredNotifications = filteredNotifications.filter(n => !n.read);
-                break;
-            case 'alerts':
-                filteredNotifications = filteredNotifications.filter(n => n.category === 'alerts' || n.priority === 'high');
-                break;
-            case 'all':
-            default:
-                // Show all notifications
-                break;
-        }
-        
-        this.renderNotifications(filteredNotifications);
-    }
-    
+    // Simplified notification functions
     markNotificationAsRead(notificationId) {
-        if (this.allNotifications) {
-            const notification = this.allNotifications.find(n => n.id === notificationId);
-            if (notification) {
-                notification.read = true;
-                this.filterNotifications(this.currentNotificationTab);
-                this.updateNotificationCounts();
-            }
-        }
+        // Simplified - just reload notifications
+        this.loadNotifications();
     }
     
     markAllAsRead() {
-        if (this.allNotifications) {
-            this.allNotifications.forEach(n => n.read = true);
-            this.filterNotifications(this.currentNotificationTab);
-            this.updateNotificationCounts();
-        }
+        // Simplified - just reload notifications  
+        this.loadNotifications();
     }
     
     dismissNotification(notificationId) {
-        if (this.allNotifications) {
-            this.allNotifications = this.allNotifications.filter(n => n.id !== notificationId);
-            this.filterNotifications(this.currentNotificationTab);
-            this.updateNotificationCounts();
+        // Simplified - just reload notifications
+        this.loadNotifications();
+    }
+    
+    clearNotifications() {
+        const notificationList = document.getElementById('notificationList');
+        const notificationBadge = document.querySelector('.notification-badge');
+        
+        if (notificationList) {
+            notificationList.innerHTML = `
+                <div class="no-notifications">
+                    <div class="empty-state">
+                        <i class="fas fa-check-circle" style="color: #10b981; font-size: 3rem; margin-bottom: 1rem;"></i>
+                        <h3 style="color: var(--text-primary); margin-bottom: 0.5rem;">All Good!</h3>
+                        <p style="color: var(--text-secondary);">No alerts or issues to address</p>
+                    </div>
+                </div>
+            `;
+        }
+        
+        if (notificationBadge) {
+            notificationBadge.style.display = 'none';
         }
     }
     
