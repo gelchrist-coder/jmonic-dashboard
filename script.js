@@ -1864,6 +1864,7 @@ class NaturalHairBusinessManager {
     // Header dropdown functionality
     initializeHeaderDropdowns() {
         const notificationBtn = document.getElementById('notificationBtn');
+        const quickActionsBtn = document.getElementById('quickActionsBtn');
         const settingsBtn = document.getElementById('settingsBtn');
         
         // Sidebar dropdown buttons
@@ -1871,6 +1872,8 @@ class NaturalHairBusinessManager {
         const sidebarSettingsBtn = document.getElementById('sidebarSettingsBtn');
         
         const notificationDropdown = document.getElementById('notificationDropdown');
+        const quickActionsDropdown = document.getElementById('quickActionsDropdown');
+        const settingsDropdown = document.getElementById('settingsDropdown');
         
         // Close dropdowns when clicking outside
         document.addEventListener('click', (e) => {
@@ -1894,6 +1897,32 @@ class NaturalHairBusinessManager {
                 e.stopPropagation();
                 this.toggleDropdown('notification');
                 this.loadNotifications();
+            });
+        }
+        
+        // Quick actions button
+        if (quickActionsBtn) {
+            quickActionsBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.toggleDropdown('quickActions');
+            });
+        }
+        
+        // Settings button (header)
+        if (settingsBtn) {
+            settingsBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.toggleDropdown('settings');
+                this.loadSettings();
+            });
+        }
+        
+        // Sidebar settings button
+        if (sidebarSettingsBtn) {
+            sidebarSettingsBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.toggleDropdown('settings');
+                this.loadSettings();
             });
         }
         
@@ -1936,14 +1965,8 @@ class NaturalHairBusinessManager {
                 e.preventDefault();
                 e.stopPropagation();
                 console.log('🗑️ Delete button clicked via delegation');
-                
-                // Call clearAllData and handle result
-                const result = this.clearAllData();
-                
-                // Only close dropdowns if action was confirmed (not cancelled)
-                if (result !== false) {
-                    this.closeAllDropdowns();
-                }
+                this.clearAllData();
+                this.closeAllDropdowns();
             }
         });
         
@@ -1953,7 +1976,9 @@ class NaturalHairBusinessManager {
     
     toggleDropdown(type) {
         const dropdowns = {
-            notification: document.getElementById('notificationDropdown')
+            notification: document.getElementById('notificationDropdown'),
+            quickActions: document.getElementById('quickActionsDropdown'),
+            settings: document.getElementById('settingsDropdown')
         };
         
         // Create or get backdrop
@@ -1985,7 +2010,7 @@ class NaturalHairBusinessManager {
     }
     
     closeAllDropdowns() {
-        const dropdowns = ['notificationDropdown'];
+        const dropdowns = ['notificationDropdown', 'quickActionsDropdown', 'settingsDropdown'];
         dropdowns.forEach(id => {
             const dropdown = document.getElementById(id);
             if (dropdown) dropdown.style.display = 'none';
@@ -3303,34 +3328,8 @@ class NaturalHairBusinessManager {
                 alert('❌ Error clearing data. Please try again or clear your browser data manually.');
             }
         } else {
-            console.log('✅ User cancelled data clearing - operation aborted');
-            
-            // Properly handle cancellation
-            try {
-                // Close any open dropdowns/modals
-                if (typeof this.closeAllDropdowns === 'function') {
-                    this.closeAllDropdowns();
-                }
-                
-                // Clear any stuck modal backdrops
-                const backdrops = document.querySelectorAll('.dropdown-backdrop, .modal-backdrop');
-                backdrops.forEach(backdrop => backdrop.remove());
-                
-                // Re-enable body scrolling if it was disabled
-                document.body.style.overflow = '';
-                
-                // Show cancellation confirmation
-                this.showNotification('Data clearing cancelled - no changes made', 'info');
-                
-            } catch (error) {
-                console.warn('Minor cleanup error after cancellation:', error);
-            }
-            
-            // Return false to indicate cancellation
-            return false;
+            console.log('User cancelled data clearing');
         }
-        
-        return true;
     }
 
     // Inventory Reports & Transaction Log Functions
@@ -4064,6 +4063,22 @@ document.addEventListener('DOMContentLoaded', function() {
     }, 1500);
     window.deleteProduct = deleteProduct;
     
+    // Expose settings activation function globally
+    window.showSettings = function() {
+        if (businessManager) {
+            businessManager.toggleDropdown('settings');
+            console.log('Settings dropdown opened');
+        }
+    };
+    
+    window.activateSettings = function() {
+        if (businessManager) {
+            businessManager.loadSettings();
+            businessManager.initializeHeaderDropdowns();
+            console.log('✅ Settings activated successfully!');
+        }
+    };
+    
     // Expose delete functionality globally
     window.clearAllData = function() {
         console.log('🌐 Global clearAllData called');
@@ -4093,6 +4108,8 @@ document.addEventListener('DOMContentLoaded', function() {
         businessManager: typeof window.businessManager,
         openModal: typeof window.openModal,
         closeModal: typeof window.closeModal,
+        showSettings: typeof window.showSettings,
+        activateSettings: typeof window.activateSettings,
         clearAllData: typeof window.clearAllData,
         deleteProduct: typeof window.deleteProduct
     });
@@ -4101,59 +4118,6 @@ document.addEventListener('DOMContentLoaded', function() {
     window.testJS = function() {
         alert('JavaScript is working!');
     };
-    
-    // Cache buster - Force reload of cached content
-    console.log('🔄 J\'MONIC Dashboard loaded - Version:', new Date().toISOString());
-    console.log('🧹 Settings removed from header - available only in sidebar');
-    
-    // Force remove any cached elements
-    setTimeout(() => {
-        const debugPanel = document.getElementById('debug-panel');
-        if (debugPanel) {
-            debugPanel.remove();
-            console.log('🧹 Removed cached debug panel');
-        }
-        
-        // Force remove quick actions button if it exists
-        const quickActionsBtn = document.getElementById('quickActionsBtn');
-        if (quickActionsBtn) {
-            quickActionsBtn.style.display = 'none';
-            console.log('🧹 Hidden cached quick actions button');
-        }
-        
-        // Force remove settings button functionality  
-        const settingsBtn = document.getElementById('settingsBtn');
-        if (settingsBtn) {
-            settingsBtn.style.display = 'none';
-            console.log('🧹 Hidden cached settings button');
-        }
-        
-        // Add visual indicator of update
-        const header = document.querySelector('.header-actions');
-        if (header) {
-            const indicator = document.createElement('div');
-            indicator.style.cssText = `
-                position: fixed;
-                top: 10px;
-                right: 10px;
-                background: #10b981;
-                color: white;
-                padding: 8px 12px;
-                border-radius: 4px;
-                font-size: 12px;
-                z-index: 10000;
-                opacity: 0.9;
-            `;
-            indicator.textContent = '✅ Header Cleaned - Settings Moved to Sidebar';
-            document.body.appendChild(indicator);
-            
-            setTimeout(() => {
-                if (indicator.parentNode) {
-                    indicator.remove();
-                }
-            }, 5000);
-        }
-    }, 500);
     
     // Ensure clearAllData is ALWAYS available globally
     window.clearAllData = window.clearAllData || function() {
@@ -4167,20 +4131,7 @@ document.addEventListener('DOMContentLoaded', function() {
             } catch (error) {
                 alert('❌ Error: ' + error.message);
             }
-        } else {
-            console.log('✅ Emergency clear cancelled by user');
-            
-            // Clean up any stuck modals or backdrops
-            const backdrops = document.querySelectorAll('.dropdown-backdrop, .modal-backdrop');
-            backdrops.forEach(backdrop => backdrop.remove());
-            
-            // Re-enable interactions
-            document.body.style.overflow = '';
-            document.body.style.pointerEvents = '';
-            
-            return false;
         }
-        return true;
     };
     
 
@@ -4500,6 +4451,20 @@ function initializeModernHeader() {
         updateNotificationBadge();
     }
     
+    // Quick Actions Button
+    const quickActionsBtn = document.getElementById('quickActionsBtn');
+    if (quickActionsBtn) {
+        quickActionsBtn.addEventListener('click', showQuickActions);
+    }
+    
+    // Settings Button
+    const settingsBtn = document.getElementById('settingsBtn');
+    if (settingsBtn) {
+        settingsBtn.addEventListener('click', () => {
+            businessManager.showNotification('Settings panel coming soon!', 'info');
+        });
+    }
+    
     // User Profile Dropdown
     const userAvatar = document.getElementById('userAvatar');
     const userDropdown = document.getElementById('userDropdown');
@@ -4625,6 +4590,56 @@ function showNotifications() {
     popup.style.boxShadow = 'var(--shadow-lg)';
     popup.style.minWidth = '300px';
     popup.style.maxWidth = '400px';
+    
+    document.body.appendChild(popup);
+    
+    // Remove popup after 5 seconds or on click outside
+    setTimeout(() => {
+        if (popup.parentNode) popup.parentNode.removeChild(popup);
+    }, 5000);
+    
+    document.addEventListener('click', function removePopup(e) {
+        if (!popup.contains(e.target)) {
+            if (popup.parentNode) popup.parentNode.removeChild(popup);
+            document.removeEventListener('click', removePopup);
+        }
+    });
+}
+
+function showQuickActions() {
+    const quickActions = [
+        { icon: 'fas fa-plus', title: 'Add Product', action: () => openModal('addProductModal') },
+        { icon: 'fas fa-cash-register', title: 'Record Sale', action: () => openModal('addSaleModal') },
+        { icon: 'fas fa-chart-bar', title: 'View Reports', action: () => showSection('reports') },
+        { icon: 'fas fa-download', title: 'Export Data', action: () => businessManager.showNotification('Export feature coming soon!', 'info') }
+    ];
+    
+    let quickActionContent = '<div class="quick-action-popup">';
+    quickActionContent += '<div class="quick-action-header">Quick Actions</div>';
+    quickActionContent += '<div class="quick-action-grid">';
+    
+    quickActions.forEach(action => {
+        quickActionContent += `
+            <div class="quick-action-item" onclick="(${action.action.toString()})(); this.parentElement.parentElement.parentElement.remove();">
+                <i class="${action.icon}"></i>
+                <span>${action.title}</span>
+            </div>
+        `;
+    });
+    
+    quickActionContent += '</div></div>';
+    
+    // Create temporary quick action popup
+    const popup = document.createElement('div');
+    popup.innerHTML = quickActionContent;
+    popup.style.position = 'fixed';
+    popup.style.top = '80px';
+    popup.style.right = '6rem';
+    popup.style.zIndex = '1001';
+    popup.style.background = 'var(--card-background)';
+    popup.style.border = '1px solid var(--border-color)';
+    popup.style.borderRadius = 'var(--radius-lg)';
+    popup.style.boxShadow = 'var(--shadow-lg)';
     
     document.body.appendChild(popup);
     
@@ -5401,7 +5416,14 @@ function toggleNotifications() {
     closeMobileSidebar();
 }
 
-
+function toggleSettings() {
+    console.log('Toggle settings from mobile sidebar');
+    if (window.dashboardApp && typeof window.dashboardApp.toggleDropdown === 'function') {
+        window.dashboardApp.toggleDropdown('settings');
+        window.dashboardApp.loadSettings();
+    }
+    closeMobileSidebar();
+}
 
 // Theme Management Functions
 function initializeTheme() {
@@ -5545,4 +5567,33 @@ function updateThemeIndicator(theme) {
         };
     }
 }
+
+// Clean up any debug panels that might exist from cached scripts
+setTimeout(() => {
+    const debugPanel = document.getElementById('debug-panel');
+    if (debugPanel) {
+        debugPanel.remove();
+        console.log('🧹 Removed existing debug panel');
+    }
+    
+    // Also remove any debug panels that might be created later
+    const observer = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+            mutation.addedNodes.forEach((node) => {
+                if (node.nodeType === 1 && (node.id === 'debug-panel' || node.classList?.contains('debug-panel'))) {
+                    node.remove();
+                    console.log('🧹 Prevented debug panel from appearing');
+                }
+            });
+        });
+    });
+    
+    observer.observe(document.body, { childList: true, subtree: true });
+}, 100);
+
+// Override any global debug functions that might exist from cached scripts
+window.debugButtons = undefined;
+window.testJS = function() {
+    console.log('JavaScript is working properly');
+};
 
