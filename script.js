@@ -1871,7 +1871,6 @@ class NaturalHairBusinessManager {
         const sidebarSettingsBtn = document.getElementById('sidebarSettingsBtn');
         
         const notificationDropdown = document.getElementById('notificationDropdown');
-        const settingsDropdown = document.getElementById('settingsDropdown');
         
         // Close dropdowns when clicking outside
         document.addEventListener('click', (e) => {
