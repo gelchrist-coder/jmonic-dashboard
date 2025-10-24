@@ -1989,54 +1989,136 @@ class NaturalHairBusinessManager {
     }
     
     initializeDeleteButtons() {
-        // Ensure all delete buttons work properly
-        const deleteButtons = [
-            document.getElementById('deleteDataBtn'),
-            document.getElementById('deleteDataBtn-dash')
-        ];
+        console.log('🔍 Initializing delete buttons...');
         
-        console.log('🔍 Initializing delete buttons...', {
-            deleteDataBtn: !!document.getElementById('deleteDataBtn'),
-            deleteDataBtnDash: !!document.getElementById('deleteDataBtn-dash')
-        });
+        // Multiple approaches to ensure delete buttons work
+        this.setupDeleteButtonHandlers();
         
-        deleteButtons.forEach(btn => {
+        // Set up periodic checks for dynamically added buttons
+        this.setupDeleteButtonObserver();
+        
+        // Set up global click delegation as fallback
+        this.setupGlobalDeleteHandler();
+    }
+    
+    setupDeleteButtonHandlers() {
+        // Method 1: Direct ID targeting
+        const deleteButtonIds = ['deleteDataBtn', 'deleteDataBtn-dash'];
+        let foundButtons = 0;
+        
+        deleteButtonIds.forEach(btnId => {
+            const btn = document.getElementById(btnId);
             if (btn) {
-                // Remove any existing listeners
-                btn.removeEventListener('click', this.clearAllDataHandler);
+                foundButtons++;
+                // Remove any existing listeners by cloning (clean slate approach)
+                const newBtn = btn.cloneNode(true);
+                btn.parentNode.replaceChild(newBtn, btn);
                 
-                // Create bound handler
-                this.clearAllDataHandler = (e) => {
+                // Add multiple event handlers for maximum reliability
+                newBtn.addEventListener('click', (e) => {
                     e.preventDefault();
                     e.stopPropagation();
-                    console.log('🗑️ Clear All Data button clicked');
+                    console.log('🗑️ Delete button clicked via ID:', btnId);
                     this.clearAllData();
-                    this.closeAllDropdowns();
+                });
+                
+                // Also add onclick as backup
+                newBtn.onclick = (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('🗑️ Delete button clicked via onclick:', btnId);
+                    this.clearAllData();
                 };
                 
-                // Add new listener
-                btn.addEventListener('click', this.clearAllDataHandler);
-                console.log('✅ Delete button initialized:', btn.id);
+                console.log('✅ Delete button initialized with multiple handlers:', btnId);
             } else {
-                console.warn('❌ Delete button not found');
+                console.log('ℹ️ Delete button not found (may not exist on this page):', btnId);
             }
         });
         
-        // Also try to find buttons by class name as backup
-        const dangerButtons = document.querySelectorAll('.btn-danger-dashboard, .btn-danger');
-        dangerButtons.forEach(btn => {
-            if (btn.textContent.includes('Clear All Data') && !btn.dataset.handlerAdded) {
-                btn.dataset.handlerAdded = 'true';
-                btn.addEventListener('click', (e) => {
+        console.log(`📊 Delete button status: ${foundButtons}/${deleteButtonIds.length} buttons found`);
+        
+        // Method 2: Class-based targeting with improved detection
+        const dangerButtons = document.querySelectorAll('.btn-danger-dashboard, .btn-danger, .btn-danger.modern');
+        let handledButtons = 0;
+        
+        dangerButtons.forEach((btn, index) => {
+            if (btn.textContent.includes('Clear') || btn.innerHTML.includes('trash') || btn.innerHTML.includes('Clear All Data')) {
+                handledButtons++;
+                // Remove existing listeners by cloning
+                const newBtn = btn.cloneNode(true);
+                btn.parentNode.replaceChild(newBtn, btn);
+                
+                newBtn.addEventListener('click', (e) => {
                     e.preventDefault();
                     e.stopPropagation();
-                    console.log('🗑️ Clear All Data (class-based) clicked');
+                    console.log('🗑️ Delete button clicked via class:', index, newBtn.textContent.trim());
                     this.clearAllData();
-                    this.closeAllDropdowns();
                 });
-                console.log('✅ Backup delete button initialized via class');
+                
+                console.log('✅ Danger button initialized via class:', index, newBtn.textContent.trim());
             }
         });
+        
+        console.log(`📊 Class-based buttons: ${handledButtons}/${dangerButtons.length} danger buttons handled`);
+    }
+    
+    setupDeleteButtonObserver() {
+        // Observer to catch dynamically added delete buttons
+        const observer = new MutationObserver((mutations) => {
+            mutations.forEach((mutation) => {
+                mutation.addedNodes.forEach((node) => {
+                    if (node.nodeType === 1) {
+                        // Check if the added node is a delete button
+                        if (node.id === 'deleteDataBtn' || node.id === 'deleteDataBtn-dash' ||
+                            node.classList.contains('btn-danger-dashboard') ||
+                            (node.textContent && node.textContent.includes('Clear All Data'))) {
+                            
+                            this.attachDeleteHandler(node);
+                        }
+                        
+                        // Check for delete buttons within the added node
+                        const deleteButtons = node.querySelectorAll('#deleteDataBtn, #deleteDataBtn-dash, .btn-danger-dashboard, .btn-danger');
+                        deleteButtons.forEach(btn => this.attachDeleteHandler(btn));
+                    }
+                });
+            });
+        });
+        
+        observer.observe(document.body, { childList: true, subtree: true });
+        this.deleteButtonObserver = observer;
+    }
+    
+    setupGlobalDeleteHandler() {
+        // Global event delegation as ultimate fallback
+        document.addEventListener('click', (e) => {
+            const target = e.target.closest('button');
+            if (target && (
+                target.id === 'deleteDataBtn' || 
+                target.id === 'deleteDataBtn-dash' ||
+                target.classList.contains('btn-danger-dashboard') ||
+                (target.textContent && target.textContent.includes('Clear All Data'))
+            )) {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('🗑️ Delete button clicked via global delegation');
+                this.clearAllData();
+            }
+        }, true); // Use capture phase
+    }
+    
+    attachDeleteHandler(btn) {
+        if (!btn || btn.dataset.deleteHandlerAttached) return;
+        
+        btn.dataset.deleteHandlerAttached = 'true';
+        btn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('🗑️ Delete button clicked via observer');
+            this.clearAllData();
+        });
+        
+        console.log('✅ Delete handler attached to:', btn.id || btn.className);
     }
     
     loadNotifications() {
@@ -4197,7 +4279,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     };
     
-    // Expose delete functionality globally
+    // Expose delete functionality globally with multiple access points
     window.clearAllData = function() {
         console.log('🌐 Global clearAllData called');
         if (window.businessManager) {
@@ -4219,6 +4301,35 @@ document.addEventListener('DOMContentLoaded', function() {
                     alert('❌ Error clearing data.');
                 }
             }
+        }
+    };
+    
+    // Additional global handlers for reliability
+    window.deleteAllData = window.clearAllData; // Alternative name
+    window.clearData = window.clearAllData; // Shortened name
+    
+    // Specific handler for HTML onclick attributes
+    window.handleClearDataClick = function(event) {
+        if (event) {
+            event.preventDefault();
+            event.stopPropagation();
+        }
+        console.log('🎯 HandleClearDataClick called');
+        window.clearAllData();
+    };
+    
+    // Backup function in case others fail
+    window.emergencyClearData = function() {
+        console.log('🚨 Emergency clear data called');
+        try {
+            if (confirm('EMERGENCY CLEAR: Delete all business data?')) {
+                ['jmonic_products', 'jmonic_sales', 'jmonic_purchases', 'inventoryTransactions', 'jmonic_settings']
+                    .forEach(key => localStorage.removeItem(key));
+                alert('Data cleared via emergency function');
+                location.reload();
+            }
+        } catch (error) {
+            console.error('Emergency clear failed:', error);
         }
     };
     
@@ -5658,5 +5769,34 @@ setTimeout(() => {
     console.log(`🧹 Found ${duplicateHandlers.length} elements with handlers`);
     
     console.log('🎯 System optimization complete');
+    
+    // Set up periodic delete button health check
+    setInterval(() => {
+        if (window.businessManager) {
+            const deleteButtons = ['deleteDataBtn', 'deleteDataBtn-dash'];
+            let workingButtons = 0;
+            
+            deleteButtons.forEach(btnId => {
+                const btn = document.getElementById(btnId);
+                if (btn) {
+                    workingButtons++;
+                    // Ensure button has proper onclick if missing
+                    if (!btn.onclick && !btn.dataset.hasGlobalHandler) {
+                        btn.onclick = function(e) {
+                            e.preventDefault();
+                            console.log('🔧 Backup onclick handler activated for:', btnId);
+                            window.clearAllData();
+                        };
+                        btn.dataset.hasGlobalHandler = 'true';
+                        console.log('🔧 Added backup onclick to:', btnId);
+                    }
+                }
+            });
+            
+            if (workingButtons === 0) {
+                console.warn('⚠️ No delete buttons found during health check');
+            }
+        }
+    }, 10000); // Check every 10 seconds
 }, 2000);
 
