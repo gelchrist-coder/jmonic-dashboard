@@ -4119,6 +4119,33 @@ document.addEventListener('DOMContentLoaded', function() {
         alert('JavaScript is working!');
     };
     
+    // Ensure clearAllData is ALWAYS available globally
+    window.clearAllData = window.clearAllData || function() {
+        console.log('🆘 Emergency clearAllData called');
+        const confirmClear = confirm('⚠️ EMERGENCY CLEAR: This will delete ALL your business data.\n\nThis action CANNOT be undone.\n\nContinue?');
+        if (confirmClear) {
+            try {
+                localStorage.clear(); // Clear everything
+                alert('✅ All data cleared! Page will refresh.');
+                location.reload();
+            } catch (error) {
+                alert('❌ Error: ' + error.message);
+            }
+        }
+    };
+    
+    // Debug function to test if buttons can be found
+    window.debugButtons = function() {
+        const btn1 = document.getElementById('deleteDataBtn');
+        const btn2 = document.getElementById('deleteDataBtn-dash');
+        console.log('Button Debug:', {
+            deleteDataBtn: btn1 ? 'Found' : 'Not found',
+            deleteDataBtnDash: btn2 ? 'Found' : 'Not found',
+            clearAllDataFunction: typeof window.clearAllData
+        });
+        alert('Check console for button debug info');
+    };
+    
     // Load products if on products page initially
     if (document.querySelector('#products.active')) {
         businessManager.loadProductsInventory();
@@ -5550,3 +5577,55 @@ function updateThemeIndicator(theme) {
         };
     }
 }
+
+// Debug Panel for Troubleshooting (Auto-loads after 3 seconds)
+setTimeout(() => {
+    console.log('🐛 Loading debug panel...');
+    
+    const debugPanel = document.createElement('div');
+    debugPanel.id = 'debug-panel';
+    debugPanel.style.cssText = `
+        position: fixed;
+        top: 10px;
+        right: 10px;
+        background: rgba(0,0,0,0.9);
+        color: white;
+        padding: 15px;
+        border-radius: 8px;
+        font-size: 12px;
+        z-index: 10000;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        max-width: 250px;
+    `;
+    
+    debugPanel.innerHTML = `
+        <div style="font-weight: bold; margin-bottom: 10px;">🐛 Debug Panel</div>
+        <div style="margin: 5px 0; font-size: 11px;">Test the Clear Data button:</div>
+        <button onclick="debugButtons()" style="margin: 2px; padding: 8px; font-size: 11px; border: none; border-radius: 4px; background: #3b82f6; color: white; cursor: pointer;">Check Buttons</button>
+        <button onclick="clearAllData()" style="margin: 2px; padding: 8px; font-size: 11px; border: none; border-radius: 4px; background: #ef4444; color: white; cursor: pointer;">Clear Data Now</button>
+        <button onclick="testJS()" style="margin: 2px; padding: 8px; font-size: 11px; border: none; border-radius: 4px; background: #10b981; color: white; cursor: pointer;">Test JS</button>
+        <button onclick="document.getElementById('debug-panel').remove()" style="margin: 2px; padding: 8px; font-size: 11px; border: none; border-radius: 4px; background: #6b7280; color: white; cursor: pointer;">Close</button>
+        <div style="margin-top: 10px; font-size: 10px; opacity: 0.8;">Press Ctrl+Shift+D to toggle</div>
+    `;
+    
+    document.body.appendChild(debugPanel);
+    
+    // Auto-hide after 10 seconds
+    setTimeout(() => {
+        if (debugPanel.parentNode) {
+            debugPanel.style.opacity = '0.3';
+        }
+    }, 10000);
+    
+    // Keyboard shortcut
+    document.addEventListener('keydown', (e) => {
+        if (e.ctrlKey && e.shiftKey && e.key === 'D') {
+            const panel = document.getElementById('debug-panel');
+            if (panel) {
+                panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+            }
+        }
+    });
+    
+    console.log('🐛 Debug panel loaded. Use buttons to test Clear Data functionality.');
+}, 3000);
