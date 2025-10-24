@@ -3354,15 +3354,24 @@ class NaturalHairBusinessManager {
         console.log('🔍 Current state - currentClearDataModal:', !!this.currentClearDataModal);
         console.log('🔍 Current state - window.clearDataInProgress:', window.clearDataInProgress);
         
-        // Prevent multiple modal calls
-        if (this.isPerformingDataClear || this.currentClearDataModal) {
-            console.log('🚫 Clear data operation already in progress');
-            console.log('💡 TIP: If stuck, run window.businessManager.resetClearDataFlags() in console');
-            return;
+        // Force clear any stuck states first
+        if (this.currentClearDataModal) {
+            console.log('� Force clearing existing modal reference');
+            try {
+                if (this.currentClearDataModal.parentNode) {
+                    this.currentClearDataModal.remove();
+                }
+            } catch (e) {
+                console.log('Modal already removed or invalid');
+            }
+            this.currentClearDataModal = null;
         }
         
-        // Reset global flag to ensure it doesn't interfere
+        // Reset flags to ensure clean state
+        this.isPerformingDataClear = false;
         window.clearDataInProgress = false;
+        
+        console.log('✅ State reset complete, creating modal...');
         
         // Create custom confirmation modal
         this.showDataClearConfirmation();
@@ -3382,15 +3391,14 @@ class NaturalHairBusinessManager {
 
     // Custom confirmation modal for data clearing
     showDataClearConfirmation() {
-        // Prevent multiple modals from opening
-        if (this.currentClearDataModal) {
-            console.log('Clear data modal already open, ignoring request');
-            return;
-        }
-
+        console.log('🔧 Creating clear data confirmation modal');
+        
         // Check for any existing modals and remove them
         const existingModals = document.querySelectorAll('.modal-backdrop.danger-backdrop');
-        existingModals.forEach(modal => modal.remove());
+        existingModals.forEach(modal => {
+            console.log('🗑️ Removing existing modal');
+            modal.remove();
+        });
 
         // Create modal backdrop
         const backdrop = document.createElement('div');
