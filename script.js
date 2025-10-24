@@ -1965,8 +1965,14 @@ class NaturalHairBusinessManager {
                 e.preventDefault();
                 e.stopPropagation();
                 console.log('🗑️ Delete button clicked via delegation');
-                this.clearAllData();
-                this.closeAllDropdowns();
+                
+                // Call clearAllData and handle result
+                const result = this.clearAllData();
+                
+                // Only close dropdowns if action was confirmed (not cancelled)
+                if (result !== false) {
+                    this.closeAllDropdowns();
+                }
             }
         });
         
@@ -3328,8 +3334,34 @@ class NaturalHairBusinessManager {
                 alert('❌ Error clearing data. Please try again or clear your browser data manually.');
             }
         } else {
-            console.log('User cancelled data clearing');
+            console.log('✅ User cancelled data clearing - operation aborted');
+            
+            // Properly handle cancellation
+            try {
+                // Close any open dropdowns/modals
+                if (typeof this.closeAllDropdowns === 'function') {
+                    this.closeAllDropdowns();
+                }
+                
+                // Clear any stuck modal backdrops
+                const backdrops = document.querySelectorAll('.dropdown-backdrop, .modal-backdrop');
+                backdrops.forEach(backdrop => backdrop.remove());
+                
+                // Re-enable body scrolling if it was disabled
+                document.body.style.overflow = '';
+                
+                // Show cancellation confirmation
+                this.showNotification('Data clearing cancelled - no changes made', 'info');
+                
+            } catch (error) {
+                console.warn('Minor cleanup error after cancellation:', error);
+            }
+            
+            // Return false to indicate cancellation
+            return false;
         }
+        
+        return true;
     }
 
     // Inventory Reports & Transaction Log Functions
@@ -4143,7 +4175,20 @@ document.addEventListener('DOMContentLoaded', function() {
             } catch (error) {
                 alert('❌ Error: ' + error.message);
             }
+        } else {
+            console.log('✅ Emergency clear cancelled by user');
+            
+            // Clean up any stuck modals or backdrops
+            const backdrops = document.querySelectorAll('.dropdown-backdrop, .modal-backdrop');
+            backdrops.forEach(backdrop => backdrop.remove());
+            
+            // Re-enable interactions
+            document.body.style.overflow = '';
+            document.body.style.pointerEvents = '';
+            
+            return false;
         }
+        return true;
     };
     
 
