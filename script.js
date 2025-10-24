@@ -3593,7 +3593,7 @@ class NaturalHairBusinessManager {
             </div>
             
             <div class="danger-content" style="margin-bottom: 2rem;">
-                <h4 style="margin: 0 0 1rem 0; color: var(--text-primary); font-size: 1.25rem; font-weight: 600;">Clear All Business Data</h4>
+                <h4 style="margin: 0 0 1rem 0; color: var(--text-primary); font-size: 1.25rem; font-weight: 600;">Delete All Business Data</h4>
                 <p style="margin: 0 0 1rem 0; color: var(--text-secondary); line-height: 1.6;">
                     This will permanently delete <strong>ALL</strong> your business data including:
                 </p>
@@ -3611,7 +3611,7 @@ class NaturalHairBusinessManager {
             </div>
             
             <div class="danger-actions" style="display: flex; gap: 1rem; justify-content: flex-end;">
-                <button id="cancelClearData" style="
+                <button id="modalCancelBtn" style="
                     padding: 0.75rem 1.5rem;
                     background: var(--card-background);
                     border: 2px solid var(--border-color);
@@ -3621,7 +3621,7 @@ class NaturalHairBusinessManager {
                     cursor: pointer;
                     transition: all 0.2s ease;
                 ">Cancel</button>
-                <button id="confirmClearData" style="
+                <button id="modalDeleteBtn" style="
                     padding: 0.75rem 1.5rem;
                     background: var(--danger-color);
                     border: 2px solid var(--danger-color);
@@ -3632,7 +3632,7 @@ class NaturalHairBusinessManager {
                     transition: all 0.2s ease;
                 ">
                     <i class="fas fa-trash" style="margin-right: 0.5rem;"></i>
-                    Clear All Data
+                    Delete Everything
                 </button>
             </div>
         `;
@@ -3648,11 +3648,11 @@ class NaturalHairBusinessManager {
                 from { transform: scale(0.9) translateY(-20px); opacity: 0; }
                 to { transform: scale(1) translateY(0); opacity: 1; }
             }
-            #cancelClearData:hover {
+            #modalCancelBtn:hover {
                 background: var(--hover-color) !important;
                 transform: translateY(-1px);
             }
-            #confirmClearData:hover {
+            #modalDeleteBtn:hover {
                 background: #dc2626 !important;
                 transform: translateY(-1px);
                 box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
@@ -3667,8 +3667,8 @@ class NaturalHairBusinessManager {
         this.currentClearDataModal = backdrop;
 
         // Handle button clicks with more robust event handling
-        const cancelBtn = document.getElementById('cancelClearData');
-        const confirmBtn = document.getElementById('confirmClearData');
+        const cancelBtn = document.getElementById('modalCancelBtn');
+        const confirmBtn = document.getElementById('modalDeleteBtn');
 
         console.log('🔍 Modal buttons found:', { cancel: !!cancelBtn, confirm: !!confirmBtn });
 
