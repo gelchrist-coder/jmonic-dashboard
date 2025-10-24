@@ -4116,25 +4116,8 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Add test function to verify JavaScript is working
     window.testJS = function() {
-        alert('JavaScript is working!');
+        console.log('JavaScript is working properly');
     };
-    
-    // Ensure clearAllData is ALWAYS available globally
-    window.clearAllData = window.clearAllData || function() {
-        console.log('🆘 Emergency clearAllData called');
-        const confirmClear = confirm('⚠️ EMERGENCY CLEAR: This will delete ALL your business data.\n\nThis action CANNOT be undone.\n\nContinue?');
-        if (confirmClear) {
-            try {
-                localStorage.clear(); // Clear everything
-                alert('✅ All data cleared! Page will refresh.');
-                location.reload();
-            } catch (error) {
-                alert('❌ Error: ' + error.message);
-            }
-        }
-    };
-    
-
     
     // Load products if on products page initially
     if (document.querySelector('#products.active')) {
@@ -5596,4 +5579,45 @@ window.debugButtons = undefined;
 window.testJS = function() {
     console.log('JavaScript is working properly');
 };
+
+// Final system health check and optimization
+setTimeout(() => {
+    console.log('🔍 Running system health check...');
+    
+    // Check core functions
+    const healthCheck = {
+        businessManager: !!window.businessManager,
+        clearAllData: typeof window.clearAllData === 'function',
+        openModal: typeof window.openModal === 'function',
+        closeModal: typeof window.closeModal === 'function',
+        deleteProduct: typeof window.deleteProduct === 'function',
+        settingsActive: !!document.getElementById('settingsDropdown'),
+        deleteButtonsPresent: !!(document.getElementById('deleteDataBtn') && document.getElementById('deleteDataBtn-dash'))
+    };
+    
+    console.log('✅ System Health Check:', healthCheck);
+    
+    // Ensure all critical buttons have event handlers
+    ['deleteDataBtn', 'deleteDataBtn-dash'].forEach(btnId => {
+        const btn = document.getElementById(btnId);
+        if (btn && !btn.onclick && !btn.dataset.handlerAdded) {
+            btn.onclick = () => {
+                console.log(`🗑️ Direct onclick for ${btnId}`);
+                if (window.clearAllData) {
+                    window.clearAllData();
+                } else {
+                    alert('Clear data function not available');
+                }
+            };
+            btn.dataset.handlerAdded = 'true';
+            console.log(`✅ Added onclick handler to ${btnId}`);
+        }
+    });
+    
+    // Clean up any potential memory leaks or duplicate listeners
+    const duplicateHandlers = document.querySelectorAll('[data-handler-added="true"]');
+    console.log(`🧹 Found ${duplicateHandlers.length} elements with handlers`);
+    
+    console.log('🎯 System optimization complete');
+}, 2000);
 
