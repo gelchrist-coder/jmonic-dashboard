@@ -433,6 +433,14 @@ class NaturalHairBusinessManager {
             const result = await this.apiCall('products.php', 'POST', productData);
             this.showNotification('Product added successfully!', 'success');
             
+            // Show live notification
+            this.showLiveNotification(
+                'Product Added!', 
+                `${productData.name} has been added to inventory`, 
+                'success', 
+                'fa-plus-circle'
+            );
+            
             // Refresh all relevant data
             await this.loadDashboardData(); // Refresh dashboard
             
@@ -502,6 +510,25 @@ class NaturalHairBusinessManager {
             localStorage.setItem('jmonic_products', JSON.stringify(products));
             
             this.showNotification('Product updated successfully!', 'success');
+            
+            // Check if stock is low and show live notification
+            const reorderLevel = updatedProduct.reorder_level || 5;
+            if (newStockQuantity <= reorderLevel && newStockQuantity > 0) {
+                this.showLiveNotification(
+                    'Low Stock Alert!', 
+                    `${updatedProduct.name} is running low (${newStockQuantity} remaining)`, 
+                    'warning', 
+                    'fa-exclamation-triangle'
+                );
+            } else if (newStockQuantity === 0) {
+                this.showLiveNotification(
+                    'Out of Stock!', 
+                    `${updatedProduct.name} is now out of stock`, 
+                    'warning', 
+                    'fa-times-circle'
+                );
+            }
+            
             await this.loadDashboardData(); // Refresh dashboard
             this.updateInventoryReports(); // Update inventory reports
             
@@ -528,6 +555,16 @@ class NaturalHairBusinessManager {
         try {
             const result = await this.apiCall('sales.php', 'POST', saleData);
             this.showNotification('Sale recorded successfully!', 'success');
+            
+            // Show live notification for sale
+            const totalAmount = parseFloat(saleData.total_amount || 0);
+            this.showLiveNotification(
+                'Sale Recorded!', 
+                `Sale completed for GHS ${totalAmount.toFixed(2)}`, 
+                'success', 
+                'fa-shopping-cart'
+            );
+            
             await this.loadDashboardData(); // Refresh dashboard
             return result.data;
         } catch (error) {
@@ -2191,6 +2228,7 @@ class NaturalHairBusinessManager {
     loadNotifications() {
         const notificationList = document.getElementById('notificationList');
         const notificationBadge = document.querySelector('.notification-badge');
+        const headerNotificationBadge = document.getElementById('headerNotificationBadge');
         const notificationCount = document.getElementById('notificationCount');
         
         if (!notificationList) return;
@@ -2229,17 +2267,19 @@ class NaturalHairBusinessManager {
             });
         }
         
-        // Update notification badge (simplified)
+        // Update notification badges (simplified)
         const unreadCount = notifications.length;
         
-        if (notificationBadge) {
-            if (unreadCount > 0) {
-                notificationBadge.textContent = unreadCount;
-                notificationBadge.style.display = 'block';
-            } else {
-                notificationBadge.style.display = 'none';
+        [notificationBadge, headerNotificationBadge].forEach(badge => {
+            if (badge) {
+                if (unreadCount > 0) {
+                    badge.textContent = unreadCount;
+                    badge.style.display = 'block';
+                } else {
+                    badge.style.display = 'none';
+                }
             }
-        }
+        });
         
         if (notificationCount) {
             notificationCount.textContent = unreadCount === 0 ? 'All good!' : 
@@ -2248,6 +2288,58 @@ class NaturalHairBusinessManager {
         
         // Simple notification display
         this.renderSimpleNotifications(notifications);
+    }
+    
+    // Header notification functions
+    showLiveNotification(title, message, type = 'info', icon = 'fa-info-circle') {
+        const liveNotification = document.getElementById('liveNotification');
+        if (!liveNotification) return;
+        
+        // Update content
+        const titleEl = liveNotification.querySelector('.notification-title');
+        const textEl = liveNotification.querySelector('.notification-text');
+        const iconEl = liveNotification.querySelector('.notification-icon i');
+        
+        if (titleEl) titleEl.textContent = title;
+        if (textEl) textEl.textContent = message;
+        if (iconEl) iconEl.className = `fas ${icon}`;
+        
+        // Update type class
+        liveNotification.className = `live-notification ${type}`;
+        
+        // Show notification
+        liveNotification.style.display = 'block';
+        
+        // Auto hide after 4 seconds
+        setTimeout(() => {
+            liveNotification.style.animation = 'slideOutRight 0.3s ease';
+            setTimeout(() => {
+                liveNotification.style.display = 'none';
+                liveNotification.style.animation = '';
+            }, 300);
+        }, 4000);
+        
+        // Update badge
+        this.updateHeaderNotificationBadge();
+    }
+    
+    updateHeaderNotificationBadge() {
+        const products = JSON.parse(localStorage.getItem('jmonic_products') || '[]');
+        const lowStockCount = products.filter(p => {
+            const stock = p.stock_quantity || 0;
+            const reorderLevel = p.reorderLevel || p.min_stock_level || 5;
+            return stock <= reorderLevel;
+        }).length;
+        
+        const headerBadge = document.getElementById('headerNotificationBadge');
+        if (headerBadge) {
+            if (lowStockCount > 0) {
+                headerBadge.textContent = lowStockCount;
+                headerBadge.style.display = 'block';
+            } else {
+                headerBadge.style.display = 'none';
+            }
+        }
     }
     
     renderSimpleNotifications(notifications) {
@@ -2316,6 +2408,20 @@ class NaturalHairBusinessManager {
         
         if (notificationBadge) {
             notificationBadge.style.display = 'none';
+        }
+    }
+    
+    // Header notification dropdown toggle
+    toggleNotificationDropdown() {
+        const dropdown = document.getElementById('notificationDropdown');
+        if (dropdown) {
+            const isVisible = dropdown.style.display !== 'none';
+            dropdown.style.display = isVisible ? 'none' : 'block';
+            
+            // Load notifications when opening
+            if (!isVisible) {
+                this.loadNotifications();
+            }
         }
     }
     
@@ -6204,4 +6310,30 @@ setTimeout(() => {
         }
     }, 10000); // Check every 10 seconds
 }, 2000);
+
+// Global notification functions
+function toggleNotificationDropdown() {
+    if (window.businessManager) {
+        window.businessManager.toggleNotificationDropdown();
+    }
+}
+
+// Close dropdown when clicking outside
+document.addEventListener('click', function(event) {
+    const dropdown = document.getElementById('notificationDropdown');
+    const notificationBell = document.getElementById('notificationBell');
+    
+    if (dropdown && notificationBell) {
+        if (!dropdown.contains(event.target) && !notificationBell.contains(event.target)) {
+            dropdown.style.display = 'none';
+        }
+    }
+});
+
+// Helper function to show live notifications
+function showLiveNotification(title, message, type = 'info', icon = 'fa-info-circle') {
+    if (window.businessManager) {
+        window.businessManager.showLiveNotification(title, message, type, icon);
+    }
+}
 
