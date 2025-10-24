@@ -3445,7 +3445,7 @@ class NaturalHairBusinessManager {
                     cursor: pointer;
                     transition: all 0.2s ease;
                 ">Cancel</button>
-                <button id="confirmClearData" style="
+                <button id="confirmClearData" onclick="console.log('🔥 ONCLICK ATTR FIRED'); if(window.businessManager){window.businessManager.performDataClear();}else if(window.directClearData){window.directClearData();}else{window.emergencyClearAllData();}" style="
                     padding: 0.75rem 1.5rem;
                     background: var(--danger-color);
                     border: 2px solid var(--danger-color);
@@ -3504,17 +3504,35 @@ class NaturalHairBusinessManager {
         }
 
         if (confirmBtn) {
+            console.log('✅ Confirm button found, adding event listener');
             confirmBtn.addEventListener('click', (e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                console.log('User confirmed data clearing');
+                console.log('🔥 CONFIRM BUTTON CLICKED - User confirmed data clearing');
                 // Close modal immediately, then perform clear
                 this.closeClearDataModal();
                 // Use timeout to ensure modal is closed before clearing
                 setTimeout(() => {
+                    console.log('🔥 About to call performDataClear()');
                     this.performDataClear();
                 }, 100);
             });
+            
+            // Also add onclick as backup
+            confirmBtn.onclick = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('🔥 ONCLICK BACKUP - User confirmed data clearing');
+                this.closeClearDataModal();
+                setTimeout(() => {
+                    console.log('🔥 About to call performDataClear() via onclick');
+                    this.performDataClear();
+                }, 100);
+            };
+            
+            console.log('✅ Event listeners added to confirm button');
+        } else {
+            console.error('❌ Confirm button not found!');
         }
 
         // Close on backdrop click
@@ -3559,6 +3577,8 @@ class NaturalHairBusinessManager {
 
     // Perform the actual data clearing
     performDataClear() {
+        console.log('🔥 performDataClear() method called');
+        
         // Prevent multiple clear operations
         if (this.isPerformingDataClear) {
             console.log('Data clear already in progress, ignoring request');
@@ -3566,15 +3586,18 @@ class NaturalHairBusinessManager {
         }
 
         this.isPerformingDataClear = true;
-        console.log('User confirmed data clearing');
+        console.log('🔥 Starting data clearing process...');
         
         try {
             // Ensure modal is closed
             if (this.currentClearDataModal) {
+                console.log('🔥 Removing current modal');
                 this.currentClearDataModal.remove();
                 this.currentClearDataModal = null;
             }
 
+            console.log('🔥 About to clear localStorage items...');
+            
             // Clear all localStorage data
             localStorage.removeItem('jmonic_products');
             localStorage.removeItem('jmonic_sales');
@@ -3583,12 +3606,15 @@ class NaturalHairBusinessManager {
             localStorage.removeItem('jmonic_settings');
             
             console.log('✅ All data cleared from localStorage');
+            console.log('🔥 About to show success notification...');
             
             // Show success notification
             this.showNotification('✅ All data has been cleared successfully! The page will refresh.', 'success');
             
+            console.log('🔥 Setting timeout for page reload...');
             // Refresh the current page to show empty state after a short delay
             setTimeout(() => {
+                console.log('🔥 Reloading page now...');
                 location.reload();
             }, 2000);
             
@@ -4379,6 +4405,40 @@ document.addEventListener('DOMContentLoaded', function() {
             } else {
                 window.clearDataInProgress = false; // Reset on cancel
             }
+        }
+    };
+    
+    // Additional global handlers for reliability
+    window.deleteAllData = window.clearAllData; // Alternative name
+    window.clearData = window.clearAllData; // Shortened name
+    
+    // Direct emergency clear function that bypasses modal
+    window.emergencyClearAllData = function() {
+        console.log('🚨 EMERGENCY CLEAR DATA CALLED');
+        try {
+            if (confirm('EMERGENCY: Clear all business data immediately?')) {
+                console.log('🚨 User confirmed emergency clear');
+                localStorage.removeItem('jmonic_products');
+                localStorage.removeItem('jmonic_sales');
+                localStorage.removeItem('jmonic_purchases');
+                localStorage.removeItem('inventoryTransactions');
+                localStorage.removeItem('jmonic_settings');
+                alert('✅ Emergency clear complete! Page will refresh.');
+                location.reload();
+            }
+        } catch (error) {
+            console.error('Emergency clear failed:', error);
+            alert('Emergency clear failed: ' + error.message);
+        }
+    };
+    
+    // Simple direct clear for button onclick
+    window.directClearData = function() {
+        console.log('🔥 DIRECT CLEAR DATA CALLED');
+        if (window.businessManager) {
+            window.businessManager.performDataClear();
+        } else {
+            window.emergencyClearAllData();
         }
     };
     
