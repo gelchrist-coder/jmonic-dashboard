@@ -43,8 +43,8 @@ define('HTTP_NOT_FOUND', 404);
 define('HTTP_METHOD_NOT_ALLOWED', 405);
 define('HTTP_INTERNAL_ERROR', 500);
 
-// Enable CORS for frontend requests
-if (CORS_ENABLED) {
+// Enable CORS for frontend requests (only in web mode)
+if (CORS_ENABLED && !defined('CLI_MODE')) {
     header('Access-Control-Allow-Origin: *');
     header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
     header('Access-Control-Allow-Headers: Content-Type, Authorization');
@@ -56,8 +56,10 @@ if (CORS_ENABLED) {
     }
 }
 
-// Set JSON content type for all API responses
-header('Content-Type: application/json; charset=utf-8');
+// Set JSON content type for all API responses (only in web mode)
+if (!defined('CLI_MODE')) {
+    header('Content-Type: application/json; charset=utf-8');
+}
 
 /**
  * Get database connection
