@@ -3269,33 +3269,184 @@ class NaturalHairBusinessManager {
     clearAllData() {
         console.log('🗑️ clearAllData() function called');
         
-        const confirmClear = confirm('⚠️ DANGER: This will permanently delete ALL your business data including products, sales, and reports.\n\nThis action CANNOT be undone.\n\nAre you absolutely sure you want to continue?');
-        
-        if (confirmClear) {
-            console.log('User confirmed data clearing');
+        // Create custom confirmation modal
+        this.showDataClearConfirmation();
+    }
+
+    // Custom confirmation modal for data clearing
+    showDataClearConfirmation() {
+        // Create modal backdrop
+        const backdrop = document.createElement('div');
+        backdrop.className = 'modal-backdrop danger-backdrop';
+        backdrop.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 10000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: fadeIn 0.3s ease;
+        `;
+
+        // Create modal content
+        const modal = document.createElement('div');
+        modal.className = 'danger-confirmation-modal';
+        modal.style.cssText = `
+            background: var(--card-background);
+            border-radius: 16px;
+            padding: 2rem;
+            max-width: 500px;
+            width: 90%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            border: 2px solid var(--danger-color);
+            transform: scale(0.9);
+            animation: modalSlideIn 0.3s ease forwards;
+        `;
+
+        modal.innerHTML = `
+            <div class="danger-header" style="display: flex; align-items: center; margin-bottom: 1.5rem;">
+                <div style="width: 48px; height: 48px; background: var(--danger-color); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-right: 1rem;">
+                    <i class="fas fa-exclamation-triangle" style="color: white; font-size: 1.5rem;"></i>
+                </div>
+                <div>
+                    <h3 style="margin: 0; color: var(--danger-color); font-size: 1.5rem; font-weight: 700;">Danger Zone</h3>
+                    <p style="margin: 0; color: var(--text-secondary); font-size: 0.875rem;">This action cannot be undone</p>
+                </div>
+            </div>
             
-            try {
-                // Clear all localStorage data
-                localStorage.removeItem('jmonic_products');
-                localStorage.removeItem('jmonic_sales');
-                localStorage.removeItem('jmonic_purchases');
-                localStorage.removeItem('inventoryTransactions');
-                localStorage.removeItem('jmonic_settings');
-                
-                console.log('✅ All data cleared from localStorage');
-                
-                // Show success message before reload
-                alert('✅ All data has been cleared successfully!\n\nThe page will now refresh.');
-                
-                // Refresh the current page to show empty state
-                location.reload();
-                
-            } catch (error) {
-                console.error('❌ Error clearing data:', error);
-                alert('❌ Error clearing data. Please try again or clear your browser data manually.');
+            <div class="danger-content" style="margin-bottom: 2rem;">
+                <h4 style="margin: 0 0 1rem 0; color: var(--text-primary); font-size: 1.25rem; font-weight: 600;">Clear All Business Data</h4>
+                <p style="margin: 0 0 1rem 0; color: var(--text-secondary); line-height: 1.6;">
+                    This will permanently delete <strong>ALL</strong> your business data including:
+                </p>
+                <ul style="margin: 0 0 1rem 0; padding-left: 1.5rem; color: var(--text-secondary); line-height: 1.6;">
+                    <li>All products and inventory</li>
+                    <li>Sales records and transactions</li>
+                    <li>Purchase history</li>
+                    <li>Settings and preferences</li>
+                </ul>
+                <div style="background: rgba(239, 68, 68, 0.1); border: 1px solid var(--danger-color); border-radius: 8px; padding: 1rem; margin-top: 1rem;">
+                    <p style="margin: 0; color: var(--danger-color); font-weight: 600;">
+                        ⚠️ This action is irreversible and cannot be undone.
+                    </p>
+                </div>
+            </div>
+            
+            <div class="danger-actions" style="display: flex; gap: 1rem; justify-content: flex-end;">
+                <button id="cancelClearData" style="
+                    padding: 0.75rem 1.5rem;
+                    background: var(--card-background);
+                    border: 2px solid var(--border-color);
+                    border-radius: 8px;
+                    color: var(--text-primary);
+                    font-weight: 600;
+                    cursor: pointer;
+                    transition: all 0.2s ease;
+                ">Cancel</button>
+                <button id="confirmClearData" style="
+                    padding: 0.75rem 1.5rem;
+                    background: var(--danger-color);
+                    border: 2px solid var(--danger-color);
+                    border-radius: 8px;
+                    color: white;
+                    font-weight: 600;
+                    cursor: pointer;
+                    transition: all 0.2s ease;
+                ">
+                    <i class="fas fa-trash" style="margin-right: 0.5rem;"></i>
+                    Clear All Data
+                </button>
+            </div>
+        `;
+
+        // Add animations
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes fadeIn {
+                from { opacity: 0; }
+                to { opacity: 1; }
             }
-        } else {
+            @keyframes modalSlideIn {
+                from { transform: scale(0.9) translateY(-20px); opacity: 0; }
+                to { transform: scale(1) translateY(0); opacity: 1; }
+            }
+            #cancelClearData:hover {
+                background: var(--hover-color) !important;
+                transform: translateY(-1px);
+            }
+            #confirmClearData:hover {
+                background: #dc2626 !important;
+                transform: translateY(-1px);
+                box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+            }
+        `;
+        document.head.appendChild(style);
+
+        backdrop.appendChild(modal);
+        document.body.appendChild(backdrop);
+
+        // Handle button clicks
+        const cancelBtn = document.getElementById('cancelClearData');
+        const confirmBtn = document.getElementById('confirmClearData');
+
+        cancelBtn.addEventListener('click', () => {
             console.log('User cancelled data clearing');
+            backdrop.style.animation = 'fadeOut 0.3s ease';
+            setTimeout(() => backdrop.remove(), 300);
+        });
+
+        confirmBtn.addEventListener('click', () => {
+            this.performDataClear();
+            backdrop.remove();
+        });
+
+        // Close on backdrop click
+        backdrop.addEventListener('click', (e) => {
+            if (e.target === backdrop) {
+                console.log('User cancelled data clearing');
+                backdrop.style.animation = 'fadeOut 0.3s ease';
+                setTimeout(() => backdrop.remove(), 300);
+            }
+        });
+
+        // Add fadeOut animation
+        style.textContent += `
+            @keyframes fadeOut {
+                from { opacity: 1; }
+                to { opacity: 0; }
+            }
+        `;
+    }
+
+    // Perform the actual data clearing
+    performDataClear() {
+        console.log('User confirmed data clearing');
+        
+        try {
+            // Clear all localStorage data
+            localStorage.removeItem('jmonic_products');
+            localStorage.removeItem('jmonic_sales');
+            localStorage.removeItem('jmonic_purchases');
+            localStorage.removeItem('inventoryTransactions');
+            localStorage.removeItem('jmonic_settings');
+            
+            console.log('✅ All data cleared from localStorage');
+            
+            // Show success notification
+            this.showNotification('✅ All data has been cleared successfully! The page will refresh.', 'success');
+            
+            // Refresh the current page to show empty state after a short delay
+            setTimeout(() => {
+                location.reload();
+            }, 2000);
+            
+        } catch (error) {
+            console.error('❌ Error clearing data:', error);
+            this.showNotification('❌ Error clearing data. Please try again.', 'error');
         }
     }
 
