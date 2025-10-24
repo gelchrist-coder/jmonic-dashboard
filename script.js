@@ -3352,6 +3352,7 @@ class NaturalHairBusinessManager {
         console.log('🗑️ clearAllData() function called');
         console.log('🔍 Current state - isPerformingDataClear:', this.isPerformingDataClear);
         console.log('🔍 Current state - currentClearDataModal:', !!this.currentClearDataModal);
+        console.log('🔍 Current state - window.clearDataInProgress:', window.clearDataInProgress);
         
         // Prevent multiple modal calls
         if (this.isPerformingDataClear || this.currentClearDataModal) {
@@ -3359,6 +3360,9 @@ class NaturalHairBusinessManager {
             console.log('💡 TIP: If stuck, run window.businessManager.resetClearDataFlags() in console');
             return;
         }
+        
+        // Reset global flag to ensure it doesn't interfere
+        window.clearDataInProgress = false;
         
         // Create custom confirmation modal
         this.showDataClearConfirmation();
@@ -4392,16 +4396,22 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Expose delete functionality globally with multiple access points
     window.clearAllData = function() {
+        console.log('🌐 Global clearAllData called');
+        console.log('🔍 Current clearDataInProgress state:', window.clearDataInProgress);
+        console.log('🔍 businessManager exists:', !!window.businessManager);
+        
         // Prevent multiple simultaneous calls
         if (window.clearDataInProgress) {
             console.log('🚫 Clear data already in progress, ignoring call');
+            console.log('💡 TIP: Run window.resetClearFlags() if stuck');
             return;
         }
 
         window.clearDataInProgress = true;
-        console.log('🌐 Global clearAllData called');
+        console.log('🌐 Setting clearDataInProgress to true, proceeding...');
         
         if (window.businessManager) {
+            console.log('🌐 Calling businessManager.clearAllData()');
             window.businessManager.clearAllData();
         } else {
             console.log('BusinessManager not available, using fallback');
@@ -4413,8 +4423,14 @@ document.addEventListener('DOMContentLoaded', function() {
                     localStorage.removeItem('jmonic_purchases');
                     localStorage.removeItem('inventoryTransactions');
                     localStorage.removeItem('jmonic_settings');
+                    
+                    // Reset flag before reload
+                    window.clearDataInProgress = false;
+                    
                     alert('✅ All data cleared! Page will refresh.');
-                    location.reload();
+                    setTimeout(() => {
+                        location.reload();
+                    }, 500);
                 } catch (error) {
                     console.error('Error:', error);
                     alert('❌ Error clearing data.');
@@ -4476,6 +4492,9 @@ document.addEventListener('DOMContentLoaded', function() {
         });
         console.log('✅ Global flag reset complete');
     };
+    
+    // Initialize flags to ensure clean state
+    window.clearDataInProgress = false;
     
     // Additional global handlers for reliability
     window.deleteAllData = window.clearAllData; // Alternative name
