@@ -5404,9 +5404,6 @@ function updateThemeSelectors(theme) {
         input.checked = input.value === theme;
     });
     
-    // Update theme indicator in header
-    updateThemeIndicator(theme);
-    
     // Add visual feedback to theme cards
     const themeCards = document.querySelectorAll('.theme-card');
     themeCards.forEach(card => {
@@ -5418,40 +5415,6 @@ function updateThemeSelectors(theme) {
             }, 200);
         }
     });
-}
-
-function updateThemeIndicator(theme) {
-    const themeIcon = document.getElementById('themeIcon');
-    const themeIndicator = document.getElementById('themeIndicator');
-    
-    if (themeIcon && themeIndicator) {
-        // Update icon based on theme
-        themeIcon.className = theme === 'dark' ? 'fas fa-moon' : 
-                             theme === 'light' ? 'fas fa-sun' : 
-                             'fas fa-adjust';
-        
-        // Update title
-        themeIndicator.title = `Current Theme: ${theme.charAt(0).toUpperCase() + theme.slice(1)}`;
-        
-        // Add active state
-        themeIndicator.classList.add('active');
-        
-        // Add click handler to quickly open settings
-        themeIndicator.onclick = () => {
-            // Navigate to settings and open appearance tab
-            if (typeof navigateToSection === 'function') {
-                navigateToSection('settings');
-                
-                // Focus on appearance tab after a short delay
-                setTimeout(() => {
-                    const appearanceTab = document.querySelector('.tab-btn[data-tab="appearance"]');
-                    if (appearanceTab) {
-                        appearanceTab.click();
-                    }
-                }, 300);
-            }
-        };
-    }
 }
 
 // Clean up any debug panels that might exist from cached scripts
