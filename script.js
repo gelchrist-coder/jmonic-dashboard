@@ -3186,32 +3186,117 @@ class NaturalHairBusinessManager {
         `).join('');
     }
 
+    // Clean up invalid inventory data and regenerate if needed
+    cleanAndRegenerateInventoryData() {
+        console.log('🧹 Cleaning up inventory data...');
+        
+        // Get all transactions
+        let transactions = JSON.parse(localStorage.getItem('inventoryTransactions') || '[]');
+        const originalCount = transactions.length;
+        
+        // Filter out invalid transactions
+        transactions = transactions.filter(transaction => {
+            const isValid = transaction && 
+                           transaction.timestamp && 
+                           transaction.product && 
+                           transaction.type &&
+                           transaction.quantity !== undefined &&
+                           transaction.newStock !== undefined;
+            
+            if (!isValid) {
+                console.log('🗑️ Removing invalid transaction:', transaction);
+            }
+            return isValid;
+        });
+        
+        // Update localStorage with cleaned transactions
+        localStorage.setItem('inventoryTransactions', JSON.stringify(transactions));
+        
+        if (originalCount !== transactions.length) {
+            console.log(`✅ Cleaned up ${originalCount - transactions.length} invalid transactions`);
+            this.showNotification(`Cleaned up ${originalCount - transactions.length} invalid transactions`, 'success');
+        }
+        
+        // If we have products but no valid transactions, create sample data
+        const products = JSON.parse(localStorage.getItem('jmonic_products') || '[]');
+        if (products.length > 0 && transactions.length === 0) {
+            console.log('📦 Regenerating sample inventory transactions...');
+            this.createSampleInventoryTransactions();
+            this.showNotification('Generated sample inventory data', 'info');
+        }
+        
+        // Refresh the display
+        this.loadInventoryTransactions();
+    }
+
     loadInventoryTransactions() {
-        const transactions = JSON.parse(localStorage.getItem('inventoryTransactions') || '[]');
+        let transactions = JSON.parse(localStorage.getItem('inventoryTransactions') || '[]');
         const tbody = document.getElementById('inventoryTransactionsTable');
         if (!tbody) return;
+
+        // Clean up any invalid transactions
+        transactions = transactions.filter(transaction => {
+            return transaction && 
+                   transaction.timestamp && 
+                   transaction.product && 
+                   transaction.type &&
+                   transaction.quantity !== undefined &&
+                   transaction.newStock !== undefined;
+        });
+
+        // Update localStorage with cleaned transactions
+        if (transactions.length !== JSON.parse(localStorage.getItem('inventoryTransactions') || '[]').length) {
+            localStorage.setItem('inventoryTransactions', JSON.stringify(transactions));
+            console.log('Cleaned up invalid transactions');
+        }
 
         if (transactions.length === 0) {
             tbody.innerHTML = '<tr><td colspan="6" class="no-data">No transactions yet</td></tr>';
             return;
         }
 
-        tbody.innerHTML = transactions.slice(-10).reverse().map(transaction => `
-            <tr>
-                <td>${new Date(transaction.date).toLocaleDateString()}</td>
-                <td>${transaction.productName}</td>
-                <td>
-                    <span class="transaction-type ${transaction.type}">${transaction.type}</span>
-                </td>
-                <td>
-                    <span class="stock-change ${transaction.quantityChange > 0 ? 'positive' : 'negative'}">
-                        ${transaction.quantityChange > 0 ? '+' : ''}${transaction.quantityChange}
-                    </span>
-                </td>
-                <td>${transaction.balanceAfter}</td>
-                <td>${transaction.reference || '-'}</td>
-            </tr>
-        `).join('');
+        // Sort transactions by timestamp (newest first) and take latest 10
+        const sortedTransactions = transactions
+            .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
+            .slice(0, 10);
+
+        tbody.innerHTML = sortedTransactions.map(transaction => {
+            // Safe date handling
+            let displayDate = 'Invalid Date';
+            try {
+                const date = new Date(transaction.timestamp);
+                if (!isNaN(date.getTime())) {
+                    displayDate = date.toLocaleDateString();
+                }
+            } catch (e) {
+                console.warn('Invalid date in transaction:', transaction.timestamp);
+            }
+
+            // Safe data extraction with fallbacks
+            const productName = transaction.product || transaction.productName || 'Unknown Product';
+            const transactionType = transaction.type || 'unknown';
+            const quantity = transaction.quantity !== undefined && transaction.quantity !== null ? transaction.quantity : 0;
+            const quantityClass = quantity > 0 ? 'positive' : 'negative';
+            const balance = transaction.newStock !== undefined && transaction.newStock !== null ? transaction.newStock : 'N/A';
+            const reference = transaction.reference || 'No Reference';
+
+            return `
+                <tr>
+                    <td>${displayDate}</td>
+                    <td>${productName}</td>
+                    <td>
+                        <span class="transaction-type ${transactionType}">${transactionType.toUpperCase()}</span>
+                    </td>
+                    <td>
+                        <span class="stock-change ${quantityClass}">
+                            ${quantity > 0 ? '+' : ''}${quantity}
+                        </span>
+                    </td>
+                    <td>${balance}</td>
+                    <td>${reference}</td>
+                </tr>
+            `;
+        }).join('');
     }
 
     loadInventoryPerformance() {
@@ -4573,6 +4658,16 @@ document.addEventListener('DOMContentLoaded', function() {
     window.deleteAllData = window.clearAllData; // Alternative name
     window.clearData = window.clearAllData; // Shortened name
     
+    // Expose inventory data cleanup function globally
+    window.cleanInventoryData = function() {
+        console.log('🔧 Manual inventory data cleanup triggered');
+        if (window.businessManager) {
+            window.businessManager.cleanAndRegenerateInventoryData();
+        } else {
+            console.error('❌ Business manager not available');
+        }
+    };
+
     // Direct emergency clear function that bypasses modal
     window.emergencyClearAllData = function() {
         console.log('🚨 EMERGENCY CLEAR DATA CALLED');
