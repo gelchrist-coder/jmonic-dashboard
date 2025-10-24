@@ -3638,6 +3638,9 @@ class NaturalHairBusinessManager {
         this.isPerformingDataClear = true;
         console.log('🔥 Starting data clearing process...');
         
+        // Show progress notification
+        this.showNotification('🗑️ Clearing all data...', 'info');
+        
         try {
             // Ensure modal is closed
             if (this.currentClearDataModal) {
@@ -3648,28 +3651,55 @@ class NaturalHairBusinessManager {
 
             console.log('🔥 About to clear localStorage items...');
             
-            // Clear all localStorage data
+            // Get all keys to ensure we clear everything J'MONIC related
+            const allKeys = Object.keys(localStorage);
+            const jmonicKeys = allKeys.filter(key => key.startsWith('jmonic_') || key.includes('jmonic'));
+            
+            console.log('🔥 Found J\'MONIC keys to clear:', jmonicKeys);
+            
+            // Clear all localStorage data (comprehensive clearing)
             localStorage.removeItem('jmonic_products');
-            localStorage.removeItem('jmonic_sales');
+            localStorage.removeItem('jmonic_sales'); 
             localStorage.removeItem('jmonic_purchases');
             localStorage.removeItem('inventoryTransactions');
             localStorage.removeItem('jmonic_settings');
+            localStorage.removeItem('jmonic_theme');
+            localStorage.removeItem('jmonic_notifications');
+            localStorage.removeItem('jmonic_analytics');
+            
+            // Clear any additional J'MONIC keys that might exist
+            jmonicKeys.forEach(key => {
+                console.log(`🔥 Clearing additional key: ${key}`);
+                localStorage.removeItem(key);
+            });
             
             console.log('✅ All data cleared from localStorage');
             console.log('🔥 About to show success notification...');
             
             // Show success notification
-            this.showNotification('✅ All data has been cleared successfully! The page will refresh.', 'success');
+            this.showNotification('✅ All data has been cleared successfully! The page will refresh in 3 seconds.', 'success');
             
             // Reset flag immediately after successful clearing
             this.isPerformingDataClear = false;
             
             console.log('🔥 Setting timeout for page reload...');
-            // Refresh the current page to show empty state after a short delay
+            
+            // Show countdown
+            let countdown = 3;
+            const countdownInterval = setInterval(() => {
+                countdown--;
+                if (countdown > 0) {
+                    this.showNotification(`✅ Data cleared! Refreshing in ${countdown} seconds...`, 'success');
+                } else {
+                    clearInterval(countdownInterval);
+                }
+            }, 1000);
+            
+            // Refresh the current page to show empty state after countdown
             setTimeout(() => {
                 console.log('🔥 Reloading page now...');
                 location.reload();
-            }, 2000);
+            }, 3000);
             
         } catch (error) {
             console.error('❌ Error clearing data:', error);
@@ -3703,7 +3733,23 @@ class NaturalHairBusinessManager {
         const todayDateString = today.toISOString().split('T')[0]; // YYYY-MM-DD format
         const todaySales = sales.filter(sale => {
             const saleDate = sale.date || sale.created_at;
-            const saleDateString = saleDate.split('T')[0]; // Get YYYY-MM-DD part
+            if (!saleDate) return false;
+            
+            // Handle different date formats safely
+            let saleDateString;
+            if (saleDate.includes('T')) {
+                saleDateString = saleDate.split('T')[0]; // Get YYYY-MM-DD part
+            } else {
+                // If no 'T', assume it's already in YYYY-MM-DD format or create Date object
+                try {
+                    const dateObj = new Date(saleDate);
+                    saleDateString = dateObj.toISOString().split('T')[0];
+                } catch (e) {
+                    console.warn('Invalid date format:', saleDate);
+                    return false;
+                }
+            }
+            
             const isToday = saleDateString === todayDateString;
             
             if (sales.length > 0) {
@@ -3776,6 +3822,14 @@ class NaturalHairBusinessManager {
         // Use only the stored inventory transactions to avoid duplicates
         // These are already created when sales are made via logInventoryTransaction()
         let allTransactions = [...transactions];
+        
+        // Apply current filter if set
+        if (this.currentTransactionFilter && this.currentTransactionFilter !== 'all') {
+            allTransactions = allTransactions.filter(transaction => 
+                transaction.type === this.currentTransactionFilter
+            );
+            console.log(`Filtered to ${this.currentTransactionFilter}: ${allTransactions.length} transactions`);
+        }
         
         // Remove duplicates based on reference number and timestamp
         const uniqueTransactions = [];
@@ -4437,39 +4491,45 @@ document.addEventListener('DOMContentLoaded', function() {
             console.log('💡 TIP: Run window.resetClearFlags() if stuck');
             return;
         }
-
-        window.clearDataInProgress = true;
-        console.log('🌐 Setting clearDataInProgress to true, proceeding...');
         
-        if (window.businessManager) {
-            console.log('🌐 Calling businessManager.clearAllData()');
-            window.businessManager.clearAllData();
-        } else {
-            console.log('BusinessManager not available, using fallback');
-            const confirmClear = confirm('⚠️ DANGER: This will permanently delete ALL your business data.\n\nThis action CANNOT be undone.\n\nAre you absolutely sure?');
-            if (confirmClear) {
-                try {
-                    localStorage.removeItem('jmonic_products');
-                    localStorage.removeItem('jmonic_sales');
-                    localStorage.removeItem('jmonic_purchases');
-                    localStorage.removeItem('inventoryTransactions');
-                    localStorage.removeItem('jmonic_settings');
-                    
-                    // Reset flag before reload
-                    window.clearDataInProgress = false;
-                    
-                    alert('✅ All data cleared! Page will refresh.');
-                    setTimeout(() => {
-                        location.reload();
-                    }, 500);
-                } catch (error) {
-                    console.error('Error:', error);
-                    alert('❌ Error clearing data.');
-                    window.clearDataInProgress = false; // Reset on error
-                }
+        try {
+            window.clearDataInProgress = true;
+            console.log('🌐 Setting clearDataInProgress to true, proceeding...');
+            
+            if (window.businessManager) {
+                console.log('🌐 Calling businessManager.clearAllData()');
+                window.businessManager.clearAllData();
             } else {
-                window.clearDataInProgress = false; // Reset on cancel
+                console.log('BusinessManager not available, using fallback');
+                const confirmClear = confirm('⚠️ DANGER: This will permanently delete ALL your business data.\n\nThis action CANNOT be undone.\n\nAre you absolutely sure?');
+                if (confirmClear) {
+                    try {
+                        localStorage.removeItem('jmonic_products');
+                        localStorage.removeItem('jmonic_sales');
+                        localStorage.removeItem('jmonic_purchases');
+                        localStorage.removeItem('inventoryTransactions');
+                        localStorage.removeItem('jmonic_settings');
+                        
+                        // Reset flag before reload
+                        window.clearDataInProgress = false;
+                        
+                        alert('✅ All data cleared! Page will refresh.');
+                        setTimeout(() => {
+                            location.reload();
+                        }, 500);
+                    } catch (error) {
+                        console.error('Error:', error);
+                        alert('❌ Error clearing data.');
+                        window.clearDataInProgress = false; // Reset on error
+                    }
+                } else {
+                    window.clearDataInProgress = false; // Reset on cancel
+                }
             }
+        } catch (error) {
+            console.error('❌ Error in clearAllData:', error);
+            window.clearDataInProgress = false;
+            alert('❌ An error occurred while clearing data. Please try again.');
         }
     };
     
@@ -5281,10 +5341,10 @@ class RevenueAnalytics {
             this.charts.revenueTrend.destroy();
         }
         
-        // Simple overview - show total revenue vs total profit
+        // Simple overview - show total revenue vs total profit and cost
         const totalRevenue = sales.reduce((sum, sale) => sum + parseFloat(sale.total_amount || 0), 0);
         const totalProfit = sales.reduce((sum, sale) => sum + parseFloat(sale.profit || 0), 0);
-        const totalCost = totalRevenue - totalProfit;
+        const totalCost = sales.reduce((sum, sale) => sum + parseFloat(sale.cost || 0), 0);
         const hasData = totalRevenue > 0;
         
         this.charts.revenueTrend = new Chart(ctx, {
@@ -5580,7 +5640,25 @@ class RevenueAnalytics {
             date.setDate(date.getDate() - i);
             const dateStr = date.toISOString().split('T')[0];
             
-            const daySales = sales.filter(sale => (sale.date || sale.created_at)?.startsWith(dateStr));
+            const daySales = sales.filter(sale => {
+                const saleDate = sale.date || sale.created_at;
+                if (!saleDate) return false;
+                
+                // Handle different date formats safely
+                try {
+                    let saleDateString;
+                    if (saleDate.includes('T')) {
+                        saleDateString = saleDate.split('T')[0];
+                    } else {
+                        const dateObj = new Date(saleDate);
+                        saleDateString = dateObj.toISOString().split('T')[0];
+                    }
+                    return saleDateString === dateStr;
+                } catch (e) {
+                    console.warn('Invalid date format in forecasting:', saleDate);
+                    return false;
+                }
+            });
             const dayRevenue = daySales.reduce((sum, sale) => sum + (sale.revenue || 0), 0);
             
             // Calculate profit
