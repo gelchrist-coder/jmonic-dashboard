@@ -97,15 +97,33 @@ class NaturalHairBusinessManager {
         
         if (method === 'POST') {
             // Add new product
+            // Validate numeric inputs
+            const sellingPrice = parseFloat(data.sellingPrice);
+            const costPrice = parseFloat(data.costPrice);
+            const stockQuantity = parseInt(data.stockQuantity);
+            const reorderLevel = parseInt(data.reorderLevel) || 10;
+            
+            if (isNaN(sellingPrice) || sellingPrice <= 0) {
+                throw new Error('Please enter a valid selling price');
+            }
+            
+            if (isNaN(costPrice) || costPrice < 0) {
+                throw new Error('Please enter a valid cost price');
+            }
+            
+            if (isNaN(stockQuantity) || stockQuantity < 0) {
+                throw new Error('Please enter a valid stock quantity');
+            }
+            
             const newProduct = {
                 id: Date.now(),
                 sku: data.sku,
                 name: data.productName,
                 description: data.description || '',
-                selling_price: parseFloat(data.sellingPrice),
-                cost_price: parseFloat(data.costPrice),
-                stock_quantity: parseInt(data.stockQuantity),
-                reorder_level: parseInt(data.reorderLevel) || 10,
+                selling_price: sellingPrice,
+                cost_price: costPrice,
+                stock_quantity: stockQuantity,
+                reorder_level: reorderLevel,
                 status: 'active',
                 created_at: new Date().toISOString()
             };
@@ -571,10 +589,28 @@ class NaturalHairBusinessManager {
         const selectedOption = productSelect.options[productSelect.selectedIndex];
         const productId = selectedOption.value;
         const productName = selectedOption.dataset.name;
+        
+        // Safe numeric parsing with validation
         const productPrice = parseFloat(selectedOption.dataset.price);
         const availableStock = parseInt(selectedOption.dataset.stock);
         const costPrice = parseFloat(selectedOption.dataset.cost) || 0;
         const quantity = parseInt(quantityInput.value) || 1;
+        
+        // Validate parsed numbers
+        if (isNaN(productPrice) || productPrice <= 0) {
+            this.showNotification('Invalid product price. Please check product data.', 'error');
+            return;
+        }
+        
+        if (isNaN(availableStock) || availableStock < 0) {
+            this.showNotification('Invalid stock quantity. Please check product data.', 'error');
+            return;
+        }
+        
+        if (isNaN(quantity) || quantity <= 0) {
+            this.showNotification('Please enter a valid quantity.', 'error');
+            return;
+        }
         
         // Enhanced stock validation
         if (quantity > availableStock) {
@@ -4754,20 +4790,35 @@ function editProduct(productId) {
     setTimeout(() => {
         const form = document.querySelector('#addProductModal form');
         if (form) {
-            form.querySelector('input[name="productName"]').value = product.name || '';
-            form.querySelector('input[name="sku"]').value = product.sku || '';
-            form.querySelector('input[name="stockQuantity"]').value = product.stock_quantity || '';
-            form.querySelector('input[name="sellingPrice"]').value = product.selling_price || '';
-            form.querySelector('input[name="costPrice"]').value = product.cost_price || '';
-            form.querySelector('input[name="reorderLevel"]').value = product.reorder_level || '';
-            form.querySelector('textarea[name="description"]').value = product.description || '';
+            // Safely set form values with null checks
+            const productNameField = form.querySelector('input[name="productName"]');
+            const skuField = form.querySelector('input[name="sku"]');
+            const stockQuantityField = form.querySelector('input[name="stockQuantity"]');
+            const sellingPriceField = form.querySelector('input[name="sellingPrice"]');
+            const costPriceField = form.querySelector('input[name="costPrice"]');
+            const reorderLevelField = form.querySelector('input[name="reorderLevel"]');
+            const descriptionField = form.querySelector('textarea[name="description"]');
             
-            // Change modal title and button text
-            document.querySelector('#addProductModal h3').textContent = 'Edit Product';
-            document.querySelector('#addProductModal button[type="submit"]').textContent = 'Update Product';
+            if (productNameField) productNameField.value = product.name || '';
+            if (skuField) skuField.value = product.sku || '';
+            if (stockQuantityField) stockQuantityField.value = product.stock_quantity || '';
+            if (sellingPriceField) sellingPriceField.value = product.selling_price || '';
+            if (costPriceField) costPriceField.value = product.cost_price || '';
+            if (reorderLevelField) reorderLevelField.value = product.reorder_level || '';
+            if (descriptionField) descriptionField.value = product.description || '';
+            
+            // Safely change modal title and button text
+            const modalTitle = document.querySelector('#addProductModal h3');
+            const submitButton = document.querySelector('#addProductModal button[type="submit"]');
+            
+            if (modalTitle) modalTitle.textContent = 'Edit Product';
+            if (submitButton) submitButton.textContent = 'Update Product';
             
             // Store the product ID for updating
             form.dataset.editingId = productId;
+        } else {
+            console.error('Could not find product form in modal');
+            businessManager.showNotification('Error opening edit form', 'error');
         }
     }, 100);
 }
