@@ -1953,6 +1953,23 @@ class NaturalHairBusinessManager {
         // Ensure delete buttons are working
         this.initializeDeleteButtons();
         
+        // Re-initialize delete buttons after a delay to catch dynamically loaded content
+        setTimeout(() => {
+            this.initializeDeleteButtons();
+        }, 1000);
+        
+        // Add event delegation for delete buttons
+        document.addEventListener('click', (e) => {
+            if (e.target.id === 'deleteDataBtn' || e.target.id === 'deleteDataBtn-dash' || 
+                (e.target.textContent && e.target.textContent.includes('Clear All Data'))) {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('🗑️ Delete button clicked via delegation');
+                this.clearAllData();
+                this.closeAllDropdowns();
+            }
+        });
+        
         // Activate settings dropdown functionality immediately
         console.log('✅ Settings functionality activated');
     }
@@ -2011,15 +2028,46 @@ class NaturalHairBusinessManager {
             document.getElementById('deleteDataBtn-dash')
         ];
         
+        console.log('🔍 Initializing delete buttons...', {
+            deleteDataBtn: !!document.getElementById('deleteDataBtn'),
+            deleteDataBtnDash: !!document.getElementById('deleteDataBtn-dash')
+        });
+        
         deleteButtons.forEach(btn => {
-            if (btn && !btn.dataset.initialized) {
-                btn.dataset.initialized = 'true';
-                btn.addEventListener('click', (e) => {
+            if (btn) {
+                // Remove any existing listeners
+                btn.removeEventListener('click', this.clearAllDataHandler);
+                
+                // Create bound handler
+                this.clearAllDataHandler = (e) => {
+                    e.preventDefault();
                     e.stopPropagation();
+                    console.log('🗑️ Clear All Data button clicked');
+                    this.clearAllData();
+                    this.closeAllDropdowns();
+                };
+                
+                // Add new listener
+                btn.addEventListener('click', this.clearAllDataHandler);
+                console.log('✅ Delete button initialized:', btn.id);
+            } else {
+                console.warn('❌ Delete button not found');
+            }
+        });
+        
+        // Also try to find buttons by class name as backup
+        const dangerButtons = document.querySelectorAll('.btn-danger-dashboard, .btn-danger');
+        dangerButtons.forEach(btn => {
+            if (btn.textContent.includes('Clear All Data') && !btn.dataset.handlerAdded) {
+                btn.dataset.handlerAdded = 'true';
+                btn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('🗑️ Clear All Data (class-based) clicked');
                     this.clearAllData();
                     this.closeAllDropdowns();
                 });
-                console.log('✅ Delete button initialized:', btn.id);
+                console.log('✅ Backup delete button initialized via class');
             }
         });
     }
@@ -3252,17 +3300,35 @@ class NaturalHairBusinessManager {
 
     // Clear all data function
     clearAllData() {
-        const confirmClear = confirm('Are you sure you want to clear all data? This action cannot be undone.');
+        console.log('🗑️ clearAllData() function called');
+        
+        const confirmClear = confirm('⚠️ DANGER: This will permanently delete ALL your business data including products, sales, and reports.\n\nThis action CANNOT be undone.\n\nAre you absolutely sure you want to continue?');
+        
         if (confirmClear) {
-            localStorage.removeItem('jmonic_products');
-            localStorage.removeItem('jmonic_sales');
-            localStorage.removeItem('jmonic_purchases');
-            localStorage.removeItem('inventoryTransactions');
+            console.log('User confirmed data clearing');
             
-            // Refresh the current page to show empty state
-            location.reload();
-            
-            this.showNotification('All data has been cleared successfully', 'success');
+            try {
+                // Clear all localStorage data
+                localStorage.removeItem('jmonic_products');
+                localStorage.removeItem('jmonic_sales');
+                localStorage.removeItem('jmonic_purchases');
+                localStorage.removeItem('inventoryTransactions');
+                localStorage.removeItem('jmonic_settings');
+                
+                console.log('✅ All data cleared from localStorage');
+                
+                // Show success message before reload
+                alert('✅ All data has been cleared successfully!\n\nThe page will now refresh.');
+                
+                // Refresh the current page to show empty state
+                location.reload();
+                
+            } catch (error) {
+                console.error('❌ Error clearing data:', error);
+                alert('❌ Error clearing data. Please try again or clear your browser data manually.');
+            }
+        } else {
+            console.log('User cancelled data clearing');
         }
     }
 
@@ -4015,16 +4081,25 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Expose delete functionality globally
     window.clearAllData = function() {
-        if (businessManager) {
-            businessManager.clearAllData();
+        console.log('🌐 Global clearAllData called');
+        if (window.businessManager) {
+            window.businessManager.clearAllData();
         } else {
-            const confirmClear = confirm('Are you sure you want to clear all data? This action cannot be undone.');
+            console.log('BusinessManager not available, using fallback');
+            const confirmClear = confirm('⚠️ DANGER: This will permanently delete ALL your business data.\n\nThis action CANNOT be undone.\n\nAre you absolutely sure?');
             if (confirmClear) {
-                localStorage.removeItem('jmonic_products');
-                localStorage.removeItem('jmonic_sales');
-                localStorage.removeItem('jmonic_purchases');
-                localStorage.removeItem('inventoryTransactions');
-                location.reload();
+                try {
+                    localStorage.removeItem('jmonic_products');
+                    localStorage.removeItem('jmonic_sales');
+                    localStorage.removeItem('jmonic_purchases');
+                    localStorage.removeItem('inventoryTransactions');
+                    localStorage.removeItem('jmonic_settings');
+                    alert('✅ All data cleared! Page will refresh.');
+                    location.reload();
+                } catch (error) {
+                    console.error('Error:', error);
+                    alert('❌ Error clearing data.');
+                }
             }
         }
     };
