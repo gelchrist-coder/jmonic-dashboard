@@ -441,6 +441,9 @@ class NaturalHairBusinessManager {
                 'fa-plus-circle'
             );
             
+            // Trigger notification alert
+            this.showNotificationAlert();
+            
             // Refresh all relevant data
             await this.loadDashboardData(); // Refresh dashboard
             
@@ -520,6 +523,8 @@ class NaturalHairBusinessManager {
                     'warning', 
                     'fa-exclamation-triangle'
                 );
+                // Trigger notification alert for low stock
+                this.showNotificationAlert();
             } else if (newStockQuantity === 0) {
                 this.showLiveNotification(
                     'Out of Stock!', 
@@ -527,6 +532,8 @@ class NaturalHairBusinessManager {
                     'warning', 
                     'fa-times-circle'
                 );
+                // Trigger notification alert for out of stock
+                this.showNotificationAlert();
             }
             
             await this.loadDashboardData(); // Refresh dashboard
@@ -2332,13 +2339,39 @@ class NaturalHairBusinessManager {
         }).length;
         
         const headerBadge = document.getElementById('headerNotificationBadge');
-        if (headerBadge) {
+        const notificationBell = document.getElementById('notificationBell');
+        
+        if (headerBadge && notificationBell) {
             if (lowStockCount > 0) {
                 headerBadge.textContent = lowStockCount;
                 headerBadge.style.display = 'block';
+                // Add alert animation class
+                notificationBell.classList.add('has-alerts');
+                
+                // Add a brief shake animation for new alerts
+                notificationBell.style.animation = 'none';
+                setTimeout(() => {
+                    notificationBell.style.animation = '';
+                }, 10);
             } else {
                 headerBadge.style.display = 'none';
+                notificationBell.classList.remove('has-alerts');
             }
+        }
+    }
+    
+    // Enhanced notification bell interaction
+    showNotificationAlert() {
+        const notificationBell = document.getElementById('notificationBell');
+        if (notificationBell) {
+            // Add a temporary shake effect for immediate feedback
+            notificationBell.style.animation = 'shake 0.5s ease-in-out';
+            setTimeout(() => {
+                notificationBell.style.animation = '';
+            }, 500);
+            
+            // Update badge and alert state
+            this.updateHeaderNotificationBadge();
         }
     }
     
@@ -2414,13 +2447,30 @@ class NaturalHairBusinessManager {
     // Header notification dropdown toggle
     toggleNotificationDropdown() {
         const dropdown = document.getElementById('notificationDropdown');
+        const notificationBell = document.getElementById('notificationBell');
+        
         if (dropdown) {
             const isVisible = dropdown.style.display !== 'none';
-            dropdown.style.display = isVisible ? 'none' : 'block';
             
-            // Load notifications when opening
-            if (!isVisible) {
+            if (isVisible) {
+                // Hide dropdown with animation
+                dropdown.style.animation = 'dropdownSlideOut 0.2s ease-in';
+                setTimeout(() => {
+                    dropdown.style.display = 'none';
+                    dropdown.style.animation = '';
+                }, 200);
+            } else {
+                // Show dropdown with animation
+                dropdown.style.display = 'block';
+                dropdown.style.animation = 'dropdownSlide 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
+                
+                // Load notifications when opening
                 this.loadNotifications();
+                
+                // Remove alert animation when dropdown is opened
+                if (notificationBell) {
+                    notificationBell.classList.remove('has-alerts');
+                }
             }
         }
     }
