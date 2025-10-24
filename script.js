@@ -3354,24 +3354,15 @@ class NaturalHairBusinessManager {
         console.log('🔍 Current state - currentClearDataModal:', !!this.currentClearDataModal);
         console.log('🔍 Current state - window.clearDataInProgress:', window.clearDataInProgress);
         
-        // Force clear any stuck states first
-        if (this.currentClearDataModal) {
-            console.log('� Force clearing existing modal reference');
-            try {
-                if (this.currentClearDataModal.parentNode) {
-                    this.currentClearDataModal.remove();
-                }
-            } catch (e) {
-                console.log('Modal already removed or invalid');
-            }
-            this.currentClearDataModal = null;
+        // Prevent multiple modal calls
+        if (this.isPerformingDataClear || this.currentClearDataModal) {
+            console.log('🚫 Clear data operation already in progress');
+            console.log('💡 TIP: If stuck, run window.businessManager.resetClearDataFlags() in console');
+            return;
         }
         
-        // Reset flags to ensure clean state
-        this.isPerformingDataClear = false;
+        // Reset global flag to ensure it doesn't interfere
         window.clearDataInProgress = false;
-        
-        console.log('✅ State reset complete, creating modal...');
         
         // Create custom confirmation modal
         this.showDataClearConfirmation();
@@ -3391,14 +3382,15 @@ class NaturalHairBusinessManager {
 
     // Custom confirmation modal for data clearing
     showDataClearConfirmation() {
-        console.log('🔧 Creating clear data confirmation modal');
-        
+        // Prevent multiple modals from opening
+        if (this.currentClearDataModal) {
+            console.log('Clear data modal already open, ignoring request');
+            return;
+        }
+
         // Check for any existing modals and remove them
         const existingModals = document.querySelectorAll('.modal-backdrop.danger-backdrop');
-        existingModals.forEach(modal => {
-            console.log('🗑️ Removing existing modal');
-            modal.remove();
-        });
+        existingModals.forEach(modal => modal.remove());
 
         // Create modal backdrop
         const backdrop = document.createElement('div');
@@ -3532,29 +3524,27 @@ class NaturalHairBusinessManager {
 
         if (confirmBtn) {
             console.log('✅ Confirm button found, adding event listener');
-            
-            // Single, robust event listener
             confirmBtn.addEventListener('click', (e) => {
                 e.preventDefault();
                 e.stopPropagation();
                 console.log('🔥 CONFIRM BUTTON CLICKED - User confirmed data clearing');
-                console.log('🔥 Current this context:', !!this);
-                console.log('🔥 performDataClear method exists:', typeof this.performDataClear);
                 
-                // Call performDataClear directly - no need to close modal first as performDataClear handles it
-                try {
-                    this.performDataClear();
-                } catch (error) {
-                    console.error('❌ Error calling performDataClear:', error);
-                    // Fallback to direct clearing
-                    if (confirm('Direct clear fallback - Continue?')) {
-                        localStorage.clear();
-                        location.reload();
-                    }
+                // Ensure we're not already clearing data
+                if (this.isPerformingDataClear) {
+                    console.log('🚫 Data clearing already in progress');
+                    return;
                 }
+                
+                // Close modal immediately, then perform clear
+                this.closeClearDataModal();
+                // Use timeout to ensure modal is closed before clearing
+                setTimeout(() => {
+                    console.log('🔥 About to call performDataClear()');
+                    this.performDataClear();
+                }, 200);
             });
             
-            console.log('✅ Event listener added to confirm button');
+            console.log('✅ Event listeners added to confirm button');
         } else {
             console.error('❌ Confirm button not found!');
         }
