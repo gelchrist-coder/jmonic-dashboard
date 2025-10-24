@@ -13,6 +13,10 @@ class NaturalHairBusinessManager {
         console.log('J\'MONIC ENTERPRISE System Initializing...');
         console.log('API Base URL:', this.apiBase);
         
+        // Initialize settings first to ensure they're always available
+        this.loadSettings();
+        this.initializeHeaderDropdowns();
+        
         // First test the connection
         try {
             console.log('Testing API connection...');
@@ -1860,7 +1864,6 @@ class NaturalHairBusinessManager {
     // Header dropdown functionality
     initializeHeaderDropdowns() {
         const notificationBtn = document.getElementById('notificationBtn');
-        const quickActionsBtn = document.getElementById('quickActionsBtn');
         const settingsBtn = document.getElementById('settingsBtn');
         
         // Sidebar dropdown buttons
@@ -1868,8 +1871,6 @@ class NaturalHairBusinessManager {
         const sidebarSettingsBtn = document.getElementById('sidebarSettingsBtn');
         
         const notificationDropdown = document.getElementById('notificationDropdown');
-        const quickActionsDropdown = document.getElementById('quickActionsDropdown');
-        const settingsDropdown = document.getElementById('settingsDropdown');
         
         // Close dropdowns when clicking outside
         document.addEventListener('click', (e) => {
@@ -1896,34 +1897,10 @@ class NaturalHairBusinessManager {
             });
         }
         
-        // Quick actions button
-        if (quickActionsBtn) {
-            quickActionsBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                this.toggleDropdown('quickActions');
-            });
-        }
-        
-        // Settings button (header)
-        if (settingsBtn) {
-            settingsBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                this.toggleDropdown('settings');
-                this.loadSettings();
-            });
-        }
-        
-        // Sidebar settings button
-        if (sidebarSettingsBtn) {
-            sidebarSettingsBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                this.toggleDropdown('settings');
-                this.loadSettings();
-            });
-        }
-        
-        // Delete button in settings dropdown
+        // Delete button in settings dropdown (both variants)
         const deleteDataBtn = document.getElementById('deleteDataBtn');
+        const deleteDataBtnDash = document.getElementById('deleteDataBtn-dash');
+        
         if (deleteDataBtn) {
             deleteDataBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
@@ -1932,15 +1909,51 @@ class NaturalHairBusinessManager {
             });
         }
         
-        // Load initial notifications
+        if (deleteDataBtnDash) {
+            deleteDataBtnDash.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.clearAllData();
+                this.closeAllDropdowns();
+            });
+        }
+        
+        // Load initial notifications and settings
         this.loadNotifications();
+        this.loadSettings();
+        
+        // Ensure delete buttons are working
+        this.initializeDeleteButtons();
+        
+        // Re-initialize delete buttons after a delay to catch dynamically loaded content
+        setTimeout(() => {
+            this.initializeDeleteButtons();
+        }, 1000);
+        
+        // Add event delegation for delete buttons
+        document.addEventListener('click', (e) => {
+            if (e.target.id === 'deleteDataBtn' || e.target.id === 'deleteDataBtn-dash' || 
+                (e.target.textContent && e.target.textContent.includes('Clear All Data'))) {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('🗑️ Delete button clicked via delegation');
+                
+                // Call clearAllData and handle result
+                const result = this.clearAllData();
+                
+                // Only close dropdowns if action was confirmed (not cancelled)
+                if (result !== false) {
+                    this.closeAllDropdowns();
+                }
+            }
+        });
+        
+        // Activate settings dropdown functionality immediately
+        console.log('✅ Settings functionality activated');
     }
     
     toggleDropdown(type) {
         const dropdowns = {
-            notification: document.getElementById('notificationDropdown'),
-            quickActions: document.getElementById('quickActionsDropdown'),
-            settings: document.getElementById('settingsDropdown')
+            notification: document.getElementById('notificationDropdown')
         };
         
         // Create or get backdrop
@@ -1972,7 +1985,7 @@ class NaturalHairBusinessManager {
     }
     
     closeAllDropdowns() {
-        const dropdowns = ['notificationDropdown', 'quickActionsDropdown', 'settingsDropdown'];
+        const dropdowns = ['notificationDropdown'];
         dropdowns.forEach(id => {
             const dropdown = document.getElementById(id);
             if (dropdown) dropdown.style.display = 'none';
@@ -1981,6 +1994,57 @@ class NaturalHairBusinessManager {
         // Hide backdrop
         const backdrop = document.getElementById('dropdownBackdrop');
         if (backdrop) backdrop.style.display = 'none';
+    }
+    
+    initializeDeleteButtons() {
+        // Ensure all delete buttons work properly
+        const deleteButtons = [
+            document.getElementById('deleteDataBtn'),
+            document.getElementById('deleteDataBtn-dash')
+        ];
+        
+        console.log('🔍 Initializing delete buttons...', {
+            deleteDataBtn: !!document.getElementById('deleteDataBtn'),
+            deleteDataBtnDash: !!document.getElementById('deleteDataBtn-dash')
+        });
+        
+        deleteButtons.forEach(btn => {
+            if (btn) {
+                // Remove any existing listeners
+                btn.removeEventListener('click', this.clearAllDataHandler);
+                
+                // Create bound handler
+                this.clearAllDataHandler = (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('🗑️ Clear All Data button clicked');
+                    this.clearAllData();
+                    this.closeAllDropdowns();
+                };
+                
+                // Add new listener
+                btn.addEventListener('click', this.clearAllDataHandler);
+                console.log('✅ Delete button initialized:', btn.id);
+            } else {
+                console.warn('❌ Delete button not found');
+            }
+        });
+        
+        // Also try to find buttons by class name as backup
+        const dangerButtons = document.querySelectorAll('.btn-danger-dashboard, .btn-danger');
+        dangerButtons.forEach(btn => {
+            if (btn.textContent.includes('Clear All Data') && !btn.dataset.handlerAdded) {
+                btn.dataset.handlerAdded = 'true';
+                btn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('🗑️ Clear All Data (class-based) clicked');
+                    this.clearAllData();
+                    this.closeAllDropdowns();
+                });
+                console.log('✅ Backup delete button initialized via class');
+            }
+        });
     }
     
     loadNotifications() {
@@ -2348,14 +2412,15 @@ class NaturalHairBusinessManager {
     loadSettings() {
         const settings = JSON.parse(localStorage.getItem('jmonic_settings') || '{}');
         
-        // Load theme settings
-        const themeRadios = document.querySelectorAll('input[name="theme"]');
+        // Load theme settings for both selectors
+        const themeRadios = document.querySelectorAll('input[name="theme"], input[name="theme-dash"]');
         themeRadios.forEach(radio => {
             radio.checked = radio.value === (settings.theme || 'light');
         });
         
         // Load other settings
         const currencySelector = document.getElementById('currencySelector');
+        const currencySelectorDash = document.getElementById('currencySelector-dash');
         const languageSelector = document.getElementById('languageSelector');
         const lowStockLevel = document.getElementById('lowStockLevel');
         const enableAnalytics = document.getElementById('enableAnalytics');
@@ -2364,6 +2429,7 @@ class NaturalHairBusinessManager {
         const autoBackup = document.getElementById('autoBackup');
         
         if (currencySelector) currencySelector.value = settings.currency || 'GHS';
+        if (currencySelectorDash) currencySelectorDash.value = settings.currency || 'GHS';
         if (languageSelector) languageSelector.value = settings.language || 'en';
         if (lowStockLevel) lowStockLevel.value = settings.lowStockLevel || 5;
         if (enableAnalytics) enableAnalytics.checked = settings.enableAnalytics !== false;
@@ -2371,15 +2437,25 @@ class NaturalHairBusinessManager {
         if (salesNotifications) salesNotifications.checked = settings.salesNotifications !== false;
         if (autoBackup) autoBackup.checked = settings.autoBackup !== false;
         
+        // Apply theme immediately
+        this.applyTheme(settings.theme || 'light');
+        
         // Initialize settings tabs
         this.initializeSettingsTabs();
+        
+        // Add theme change event listeners
+        this.initializeThemeHandlers();
     }
     
     saveSettings() {
-        const themeRadio = document.querySelector('input[name="theme"]:checked');
+        const themeRadio = document.querySelector('input[name="theme"]:checked') || 
+                          document.querySelector('input[name="theme-dash"]:checked');
+        const currency = document.getElementById('currencySelector')?.value || 
+                        document.getElementById('currencySelector-dash')?.value || 'GHS';
+        
         const settings = {
             theme: themeRadio?.value || 'light',
-            currency: document.getElementById('currencySelector')?.value || 'GHS',
+            currency: currency,
             language: document.getElementById('languageSelector')?.value || 'en',
             lowStockLevel: parseInt(document.getElementById('lowStockLevel')?.value) || 5,
             enableAnalytics: document.getElementById('enableAnalytics')?.checked !== false,
@@ -2398,6 +2474,64 @@ class NaturalHairBusinessManager {
             saveBtn.innerHTML = '<i class="fas fa-check"></i> Saved!';
             setTimeout(() => {
                 saveBtn.innerHTML = '<i class="fas fa-save"></i> Save Changes';
+            }, 2000);
+        }
+    }
+    
+    resetSettings() {
+        // Reset to default settings
+        const defaultSettings = {
+            theme: 'light',
+            currency: 'GHS',
+            language: 'en',
+            lowStockLevel: 5,
+            enableAnalytics: true,
+            lowStockAlerts: true,
+            salesNotifications: true,
+            autoBackup: true
+        };
+        
+        // Apply default settings to UI
+        const themeInputs = document.querySelectorAll('input[name="theme"], input[name="theme-dash"]');
+        themeInputs.forEach(input => {
+            input.checked = input.value === defaultSettings.theme;
+        });
+        
+        const currencySelector = document.getElementById('currencySelector');
+        const currencySelectorDash = document.getElementById('currencySelector-dash');
+        const languageSelector = document.getElementById('languageSelector');
+        const lowStockLevel = document.getElementById('lowStockLevel');
+        const enableAnalytics = document.getElementById('enableAnalytics');
+        const lowStockAlerts = document.getElementById('lowStockAlerts');
+        const salesNotifications = document.getElementById('salesNotifications');
+        const autoBackup = document.getElementById('autoBackup');
+        
+        if (currencySelector) currencySelector.value = defaultSettings.currency;
+        if (currencySelectorDash) currencySelectorDash.value = defaultSettings.currency;
+        if (languageSelector) languageSelector.value = defaultSettings.language;
+        if (lowStockLevel) lowStockLevel.value = defaultSettings.lowStockLevel;
+        if (enableAnalytics) enableAnalytics.checked = defaultSettings.enableAnalytics;
+        if (lowStockAlerts) lowStockAlerts.checked = defaultSettings.lowStockAlerts;
+        if (salesNotifications) salesNotifications.checked = defaultSettings.salesNotifications;
+        if (autoBackup) autoBackup.checked = defaultSettings.autoBackup;
+        
+        // Apply theme immediately using global function
+        if (typeof applyThemeGlobal === 'function') {
+            applyThemeGlobal(defaultSettings.theme);
+        }
+        
+        // Save the default settings
+        localStorage.setItem('jmonic_settings', JSON.stringify(defaultSettings));
+        this.applySettings(defaultSettings);
+        
+        this.showNotification('Settings reset to default successfully!', 'info');
+        
+        // Add reset animation
+        const resetBtn = document.querySelector('.footer-actions .btn-secondary');
+        if (resetBtn) {
+            resetBtn.innerHTML = '<i class="fas fa-check"></i> Reset!';
+            setTimeout(() => {
+                resetBtn.innerHTML = '<i class="fas fa-undo"></i> Reset to Default';
             }, 2000);
         }
     }
@@ -2441,11 +2575,7 @@ class NaturalHairBusinessManager {
     
     applySettings(settings) {
         // Apply theme
-        if (settings.theme === 'dark') {
-            document.body.classList.add('dark-theme');
-        } else {
-            document.body.classList.remove('dark-theme');
-        }
+        this.applyTheme(settings.theme || 'light');
         
         // Apply currency (this would need more implementation for full currency conversion)
         window.currentCurrency = settings.currency;
@@ -2455,6 +2585,97 @@ class NaturalHairBusinessManager {
         
         // Refresh data with new settings
         this.refreshLowStockData();
+    }
+    
+    applyTheme(theme) {
+        const body = document.body;
+        const html = document.documentElement;
+        
+        // Add smooth transition animation
+        body.classList.add('theme-changing');
+        
+        // Remove all theme classes
+        body.classList.remove('theme-light', 'theme-dark', 'theme-auto');
+        html.classList.remove('theme-light', 'theme-dark', 'theme-auto');
+        
+        if (theme === 'dark') {
+            body.classList.add('theme-dark');
+            html.classList.add('theme-dark');
+        } else if (theme === 'light') {
+            body.classList.add('theme-light');
+            html.classList.add('theme-light');
+        } else if (theme === 'auto') {
+            body.classList.add('theme-auto');
+            html.classList.add('theme-auto');
+            
+            // Check system preference
+            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            if (prefersDark) {
+                body.classList.add('theme-dark');
+                html.classList.add('theme-dark');
+            } else {
+                body.classList.add('theme-light');
+                html.classList.add('theme-light');
+            }
+        }
+        
+        // Remove animation class after transition
+        setTimeout(() => {
+            body.classList.remove('theme-changing');
+        }, 500);
+        
+        // Store theme preference
+        localStorage.setItem('jmonic_theme', theme);
+        
+        // Update theme preview in theme cards
+        this.updateThemePreview(theme);
+    }
+    
+    updateThemePreview(theme) {
+        // Add visual feedback to show which theme is active
+        const themeCards = document.querySelectorAll('.theme-card');
+        themeCards.forEach(card => {
+            const input = card.previousElementSibling;
+            if (input && input.value === theme) {
+                card.style.transform = 'scale(1.05)';
+                setTimeout(() => {
+                    card.style.transform = '';
+                }, 200);
+            }
+        });
+    }
+    
+    initializeThemeHandlers() {
+        // Add event listeners to all theme selectors
+        const themeInputs = document.querySelectorAll('input[name="theme"], input[name="theme-dash"]');
+        
+        themeInputs.forEach(input => {
+            input.addEventListener('change', (e) => {
+                if (e.target.checked) {
+                    const theme = e.target.value;
+                    this.applyTheme(theme);
+                    
+                    // Sync all theme selectors
+                    themeInputs.forEach(otherInput => {
+                        otherInput.checked = otherInput.value === theme;
+                    });
+                    
+                    // Save settings
+                    setTimeout(() => this.saveSettings(), 100);
+                    
+                    // Show theme change notification
+                    this.showNotification(`Theme changed to ${theme.charAt(0).toUpperCase() + theme.slice(1)}`, 'success');
+                }
+            });
+        });
+        
+        // Listen for system theme changes when in auto mode
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+            const currentTheme = localStorage.getItem('jmonic_theme') || 'light';
+            if (currentTheme === 'auto') {
+                this.applyTheme('auto');
+            }
+        });
     }
     
     updateLowStockAlerts(lowStockProducts) {
@@ -3054,18 +3275,62 @@ class NaturalHairBusinessManager {
 
     // Clear all data function
     clearAllData() {
-        const confirmClear = confirm('Are you sure you want to clear all data? This action cannot be undone.');
+        console.log('🗑️ clearAllData() function called');
+        
+        const confirmClear = confirm('⚠️ DANGER: This will permanently delete ALL your business data including products, sales, and reports.\n\nThis action CANNOT be undone.\n\nAre you absolutely sure you want to continue?');
+        
         if (confirmClear) {
-            localStorage.removeItem('jmonic_products');
-            localStorage.removeItem('jmonic_sales');
-            localStorage.removeItem('jmonic_purchases');
-            localStorage.removeItem('inventoryTransactions');
+            console.log('User confirmed data clearing');
             
-            // Refresh the current page to show empty state
-            location.reload();
+            try {
+                // Clear all localStorage data
+                localStorage.removeItem('jmonic_products');
+                localStorage.removeItem('jmonic_sales');
+                localStorage.removeItem('jmonic_purchases');
+                localStorage.removeItem('inventoryTransactions');
+                localStorage.removeItem('jmonic_settings');
+                
+                console.log('✅ All data cleared from localStorage');
+                
+                // Show success message before reload
+                alert('✅ All data has been cleared successfully!\n\nThe page will now refresh.');
+                
+                // Refresh the current page to show empty state
+                location.reload();
+                
+            } catch (error) {
+                console.error('❌ Error clearing data:', error);
+                alert('❌ Error clearing data. Please try again or clear your browser data manually.');
+            }
+        } else {
+            console.log('✅ User cancelled data clearing - operation aborted');
             
-            this.showNotification('All data has been cleared successfully', 'success');
+            // Properly handle cancellation
+            try {
+                // Close any open dropdowns/modals
+                if (typeof this.closeAllDropdowns === 'function') {
+                    this.closeAllDropdowns();
+                }
+                
+                // Clear any stuck modal backdrops
+                const backdrops = document.querySelectorAll('.dropdown-backdrop, .modal-backdrop');
+                backdrops.forEach(backdrop => backdrop.remove());
+                
+                // Re-enable body scrolling if it was disabled
+                document.body.style.overflow = '';
+                
+                // Show cancellation confirmation
+                this.showNotification('Data clearing cancelled - no changes made', 'info');
+                
+            } catch (error) {
+                console.warn('Minor cleanup error after cancellation:', error);
+            }
+            
+            // Return false to indicate cancellation
+            return false;
         }
+        
+        return true;
     }
 
     // Inventory Reports & Transaction Log Functions
@@ -3758,6 +4023,10 @@ let businessManager;
 document.addEventListener('DOMContentLoaded', function() {
     console.log('DOM loaded, initializing business manager...');
     businessManager = new NaturalHairBusinessManager();
+    
+    // Initialize theme immediately
+    initializeTheme();
+    
     initializeEventListeners();
     setupFormHandlers();
     
@@ -3775,6 +4044,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (businessManager) {
             businessManager.refreshLowStockData();
             businessManager.initializeHeaderDropdowns();
+            businessManager.loadSettings(); // Activate settings immediately
             businessManager.updateInventoryReports();
             businessManager.updateRevenueForecast();
             
@@ -3794,16 +4064,126 @@ document.addEventListener('DOMContentLoaded', function() {
     }, 1500);
     window.deleteProduct = deleteProduct;
     
+    // Expose delete functionality globally
+    window.clearAllData = function() {
+        console.log('🌐 Global clearAllData called');
+        if (window.businessManager) {
+            window.businessManager.clearAllData();
+        } else {
+            console.log('BusinessManager not available, using fallback');
+            const confirmClear = confirm('⚠️ DANGER: This will permanently delete ALL your business data.\n\nThis action CANNOT be undone.\n\nAre you absolutely sure?');
+            if (confirmClear) {
+                try {
+                    localStorage.removeItem('jmonic_products');
+                    localStorage.removeItem('jmonic_sales');
+                    localStorage.removeItem('jmonic_purchases');
+                    localStorage.removeItem('inventoryTransactions');
+                    localStorage.removeItem('jmonic_settings');
+                    alert('✅ All data cleared! Page will refresh.');
+                    location.reload();
+                } catch (error) {
+                    console.error('Error:', error);
+                    alert('❌ Error clearing data.');
+                }
+            }
+        }
+    };
+    
     console.log('Global functions exported:', {
         businessManager: typeof window.businessManager,
         openModal: typeof window.openModal,
-        closeModal: typeof window.closeModal
+        closeModal: typeof window.closeModal,
+        clearAllData: typeof window.clearAllData,
+        deleteProduct: typeof window.deleteProduct
     });
     
     // Add test function to verify JavaScript is working
     window.testJS = function() {
         alert('JavaScript is working!');
     };
+    
+    // Cache buster - Force reload of cached content
+    console.log('🔄 J\'MONIC Dashboard loaded - Version:', new Date().toISOString());
+    console.log('🧹 Settings removed from header - available only in sidebar');
+    
+    // Force remove any cached elements
+    setTimeout(() => {
+        const debugPanel = document.getElementById('debug-panel');
+        if (debugPanel) {
+            debugPanel.remove();
+            console.log('🧹 Removed cached debug panel');
+        }
+        
+        // Force remove quick actions button if it exists
+        const quickActionsBtn = document.getElementById('quickActionsBtn');
+        if (quickActionsBtn) {
+            quickActionsBtn.style.display = 'none';
+            console.log('🧹 Hidden cached quick actions button');
+        }
+        
+        // Force remove settings button functionality  
+        const settingsBtn = document.getElementById('settingsBtn');
+        if (settingsBtn) {
+            settingsBtn.style.display = 'none';
+            console.log('🧹 Hidden cached settings button');
+        }
+        
+        // Add visual indicator of update
+        const header = document.querySelector('.header-actions');
+        if (header) {
+            const indicator = document.createElement('div');
+            indicator.style.cssText = `
+                position: fixed;
+                top: 10px;
+                right: 10px;
+                background: #10b981;
+                color: white;
+                padding: 8px 12px;
+                border-radius: 4px;
+                font-size: 12px;
+                z-index: 10000;
+                opacity: 0.9;
+            `;
+            indicator.textContent = '✅ Header Cleaned - Settings Moved to Sidebar';
+            document.body.appendChild(indicator);
+            
+            setTimeout(() => {
+                if (indicator.parentNode) {
+                    indicator.remove();
+                }
+            }, 5000);
+        }
+    }, 500);
+    
+    // Ensure clearAllData is ALWAYS available globally
+    window.clearAllData = window.clearAllData || function() {
+        console.log('🆘 Emergency clearAllData called');
+        const confirmClear = confirm('⚠️ EMERGENCY CLEAR: This will delete ALL your business data.\n\nThis action CANNOT be undone.\n\nContinue?');
+        if (confirmClear) {
+            try {
+                localStorage.clear(); // Clear everything
+                alert('✅ All data cleared! Page will refresh.');
+                location.reload();
+            } catch (error) {
+                alert('❌ Error: ' + error.message);
+            }
+        } else {
+            console.log('✅ Emergency clear cancelled by user');
+            
+            // Clean up any stuck modals or backdrops
+            const backdrops = document.querySelectorAll('.dropdown-backdrop, .modal-backdrop');
+            backdrops.forEach(backdrop => backdrop.remove());
+            
+            // Re-enable interactions
+            document.body.style.overflow = '';
+            document.body.style.pointerEvents = '';
+            
+            return false;
+        }
+        return true;
+    };
+    
+
     
     // Load products if on products page initially
     if (document.querySelector('#products.active')) {
@@ -4046,23 +4426,33 @@ function deleteProduct(productId) {
     if (confirm('Are you sure you want to delete this product? This action cannot be undone.')) {
         console.log('Deleting product:', productId);
         
-        // Get products from localStorage
-        const products = JSON.parse(localStorage.getItem('jmonic_products') || '[]');
-        
-        // Filter out the product to delete
-        const updatedProducts = products.filter(p => p.id != productId);
-        
-        // Save back to localStorage
-        localStorage.setItem('jmonic_products', JSON.stringify(updatedProducts));
-        
-        // Show success message
-        businessManager.showNotification('Product deleted successfully!', 'success');
-        
-        // Refresh the products table
-        businessManager.loadProductsInventory();
-        
-        // Refresh dashboard data
-        businessManager.loadDashboardData();
+        try {
+            // Get products from localStorage
+            const products = JSON.parse(localStorage.getItem('jmonic_products') || '[]');
+            
+            // Filter out the product to delete
+            const updatedProducts = products.filter(p => p.id != productId);
+            
+            // Save back to localStorage
+            localStorage.setItem('jmonic_products', JSON.stringify(updatedProducts));
+            
+            // Show success message
+            if (window.businessManager) {
+                window.businessManager.showNotification('Product deleted successfully!', 'success');
+                
+                // Refresh the products table
+                window.businessManager.loadProductsInventory();
+                
+                // Refresh dashboard data
+                window.businessManager.loadDashboardData();
+            } else {
+                alert('Product deleted successfully!');
+                location.reload(); // Fallback: reload page
+            }
+        } catch (error) {
+            console.error('Error deleting product:', error);
+            alert('Error deleting product. Please try again.');
+        }
     }
 }
 
@@ -4108,20 +4498,6 @@ function initializeModernHeader() {
     if (notificationBtn) {
         notificationBtn.addEventListener('click', showNotifications);
         updateNotificationBadge();
-    }
-    
-    // Quick Actions Button
-    const quickActionsBtn = document.getElementById('quickActionsBtn');
-    if (quickActionsBtn) {
-        quickActionsBtn.addEventListener('click', showQuickActions);
-    }
-    
-    // Settings Button
-    const settingsBtn = document.getElementById('settingsBtn');
-    if (settingsBtn) {
-        settingsBtn.addEventListener('click', () => {
-            businessManager.showNotification('Settings panel coming soon!', 'info');
-        });
     }
     
     // User Profile Dropdown
@@ -4249,56 +4625,6 @@ function showNotifications() {
     popup.style.boxShadow = 'var(--shadow-lg)';
     popup.style.minWidth = '300px';
     popup.style.maxWidth = '400px';
-    
-    document.body.appendChild(popup);
-    
-    // Remove popup after 5 seconds or on click outside
-    setTimeout(() => {
-        if (popup.parentNode) popup.parentNode.removeChild(popup);
-    }, 5000);
-    
-    document.addEventListener('click', function removePopup(e) {
-        if (!popup.contains(e.target)) {
-            if (popup.parentNode) popup.parentNode.removeChild(popup);
-            document.removeEventListener('click', removePopup);
-        }
-    });
-}
-
-function showQuickActions() {
-    const quickActions = [
-        { icon: 'fas fa-plus', title: 'Add Product', action: () => openModal('addProductModal') },
-        { icon: 'fas fa-cash-register', title: 'Record Sale', action: () => openModal('addSaleModal') },
-        { icon: 'fas fa-chart-bar', title: 'View Reports', action: () => showSection('reports') },
-        { icon: 'fas fa-download', title: 'Export Data', action: () => businessManager.showNotification('Export feature coming soon!', 'info') }
-    ];
-    
-    let quickActionContent = '<div class="quick-action-popup">';
-    quickActionContent += '<div class="quick-action-header">Quick Actions</div>';
-    quickActionContent += '<div class="quick-action-grid">';
-    
-    quickActions.forEach(action => {
-        quickActionContent += `
-            <div class="quick-action-item" onclick="(${action.action.toString()})(); this.parentElement.parentElement.parentElement.remove();">
-                <i class="${action.icon}"></i>
-                <span>${action.title}</span>
-            </div>
-        `;
-    });
-    
-    quickActionContent += '</div></div>';
-    
-    // Create temporary quick action popup
-    const popup = document.createElement('div');
-    popup.innerHTML = quickActionContent;
-    popup.style.position = 'fixed';
-    popup.style.top = '80px';
-    popup.style.right = '6rem';
-    popup.style.zIndex = '1001';
-    popup.style.background = 'var(--card-background)';
-    popup.style.border = '1px solid var(--border-color)';
-    popup.style.borderRadius = 'var(--radius-lg)';
-    popup.style.boxShadow = 'var(--shadow-lg)';
     
     document.body.appendChild(popup);
     
@@ -5075,11 +5401,148 @@ function toggleNotifications() {
     closeMobileSidebar();
 }
 
-function toggleSettings() {
-    console.log('Toggle settings from mobile sidebar');
-    if (window.dashboardApp && typeof window.dashboardApp.toggleDropdown === 'function') {
-        window.dashboardApp.toggleDropdown('settings');
-        window.dashboardApp.loadSettings();
-    }
-    closeMobileSidebar();
+
+
+// Theme Management Functions
+function initializeTheme() {
+    // Get saved theme or default to light
+    const savedTheme = localStorage.getItem('jmonic_theme') || 'light';
+    
+    // Apply theme immediately
+    applyThemeGlobal(savedTheme);
+    
+    // Set up theme change listeners
+    setupThemeListeners();
+    
+    // Listen for system theme changes
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+        const currentTheme = localStorage.getItem('jmonic_theme') || 'light';
+        if (currentTheme === 'auto') {
+            applyThemeGlobal('auto');
+        }
+    });
 }
+
+function applyThemeGlobal(theme) {
+    const body = document.body;
+    const html = document.documentElement;
+    
+    // Add smooth transition animation
+    body.classList.add('theme-changing');
+    
+    // Remove all theme classes
+    body.classList.remove('theme-light', 'theme-dark', 'theme-auto');
+    html.classList.remove('theme-light', 'theme-dark', 'theme-auto');
+    
+    if (theme === 'dark') {
+        body.classList.add('theme-dark');
+        html.classList.add('theme-dark');
+    } else if (theme === 'light') {
+        body.classList.add('theme-light');
+        html.classList.add('theme-light');
+    } else if (theme === 'auto') {
+        body.classList.add('theme-auto');
+        html.classList.add('theme-auto');
+        
+        // Check system preference
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        if (prefersDark) {
+            body.classList.add('theme-dark');
+            html.classList.add('theme-dark');
+        } else {
+            body.classList.add('theme-light');
+            html.classList.add('theme-light');
+        }
+    }
+    
+    // Remove animation class after transition
+    setTimeout(() => {
+        body.classList.remove('theme-changing');
+    }, 500);
+    
+    // Store theme preference
+    localStorage.setItem('jmonic_theme', theme);
+    
+    // Update all theme selectors
+    updateThemeSelectors(theme);
+}
+
+function setupThemeListeners() {
+    // Add event listeners to all theme selectors
+    const themeInputs = document.querySelectorAll('input[name="theme"], input[name="theme-dash"]');
+    
+    themeInputs.forEach(input => {
+        input.addEventListener('change', (e) => {
+            if (e.target.checked) {
+                const theme = e.target.value;
+                applyThemeGlobal(theme);
+                
+                // Show theme change notification
+                if (window.businessManager && typeof window.businessManager.showNotification === 'function') {
+                    window.businessManager.showNotification(
+                        `Theme changed to ${theme.charAt(0).toUpperCase() + theme.slice(1)}`, 
+                        'success'
+                    );
+                }
+            }
+        });
+    });
+}
+
+function updateThemeSelectors(theme) {
+    // Update all theme radio buttons
+    const themeInputs = document.querySelectorAll('input[name="theme"], input[name="theme-dash"]');
+    themeInputs.forEach(input => {
+        input.checked = input.value === theme;
+    });
+    
+    // Update theme indicator in header
+    updateThemeIndicator(theme);
+    
+    // Add visual feedback to theme cards
+    const themeCards = document.querySelectorAll('.theme-card');
+    themeCards.forEach(card => {
+        const input = card.previousElementSibling;
+        if (input && input.value === theme) {
+            card.style.transform = 'scale(1.05)';
+            setTimeout(() => {
+                card.style.transform = '';
+            }, 200);
+        }
+    });
+}
+
+function updateThemeIndicator(theme) {
+    const themeIcon = document.getElementById('themeIcon');
+    const themeIndicator = document.getElementById('themeIndicator');
+    
+    if (themeIcon && themeIndicator) {
+        // Update icon based on theme
+        themeIcon.className = theme === 'dark' ? 'fas fa-moon' : 
+                             theme === 'light' ? 'fas fa-sun' : 
+                             'fas fa-adjust';
+        
+        // Update title
+        themeIndicator.title = `Current Theme: ${theme.charAt(0).toUpperCase() + theme.slice(1)}`;
+        
+        // Add active state
+        themeIndicator.classList.add('active');
+        
+        // Add click handler to quickly open settings
+        themeIndicator.onclick = () => {
+            // Navigate to settings and open appearance tab
+            if (typeof navigateToSection === 'function') {
+                navigateToSection('settings');
+                
+                // Focus on appearance tab after a short delay
+                setTimeout(() => {
+                    const appearanceTab = document.querySelector('.tab-btn[data-tab="appearance"]');
+                    if (appearanceTab) {
+                        appearanceTab.click();
+                    }
+                }, 300);
+            }
+        };
+    }
+}
+
