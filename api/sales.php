@@ -174,7 +174,7 @@ function handleRecordSale($db, $data) {
         }
         
         // Validate payment method
-        $validPaymentMethods = ['cash', 'card', 'transfer', 'cheque', 'credit'];
+        $validPaymentMethods = ['cash', 'transfer', 'mobile_money', 'cheque', 'credit'];
         if (!in_array($data['payment_method'], $validPaymentMethods)) {
             sendErrorResponse(HTTP_BAD_REQUEST, 'Invalid payment method');
             return;

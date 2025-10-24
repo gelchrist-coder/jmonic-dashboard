@@ -182,32 +182,32 @@
                                 </div>
                             </div>
                         </div>
-                    </div>
-                    
-                    <!-- Modern Notification Dropdown -->
-                    <div class="notification-dropdown modern-dropdown" id="notificationDropdown" style="display: none;">
-                        <div class="dropdown-header">
-                            <div class="header-left">
-                                <div class="header-icon">
-                                    <i class="fas fa-bell"></i>
+                        
+                        <!-- Modern Notification Dropdown -->
+                        <div class="notification-dropdown modern-dropdown" id="notificationDropdown" style="display: none;">
+                            <div class="dropdown-header">
+                                <div class="header-left">
+                                    <div class="header-icon">
+                                        <i class="fas fa-bell"></i>
+                                    </div>
+                                    <div class="header-title">
+                                        <h3>Notifications</h3>
+                                        <span class="notification-count" id="notificationCount">All good!</span>
+                                    </div>
                                 </div>
-                                <div class="header-title">
-                                    <h3>Notifications</h3>
-                                    <span class="notification-count" id="notificationCount">All good!</span>
+                                <div class="header-actions">
+                                    <button class="action-btn" onclick="businessManager.clearNotifications()" title="Clear all">
+                                        <i class="fas fa-trash-alt"></i>
+                                    </button>
                                 </div>
                             </div>
-                            <div class="header-actions">
-                                <button class="action-btn" onclick="businessManager.clearNotifications()" title="Clear all">
-                                    <i class="fas fa-trash-alt"></i>
-                                </button>
-                            </div>
-                        </div>
-                        <div class="notification-list" id="notificationList">
-                            <div class="no-notifications">
-                                <div class="empty-state">
-                                    <i class="fas fa-check-circle" style="color: #10b981; font-size: 2rem; margin-bottom: 0.5rem;"></i>
-                                    <h4>All Good!</h4>
-                                    <p>No alerts or issues to address</p>
+                            <div class="notification-list" id="notificationList">
+                                <div class="no-notifications">
+                                    <div class="empty-state">
+                                        <i class="fas fa-check-circle" style="color: #10b981; font-size: 2rem; margin-bottom: 0.5rem;"></i>
+                                        <h4>All Good!</h4>
+                                        <p>No alerts or issues to address</p>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -1314,112 +1314,6 @@
 
                 <!-- Settings Dashboard Section -->
                 <section id="settings" class="content-section">
-                        <div class="dashboard-card notification-stats">
-                            <div class="card-icon alerts">
-                                <i class="fas fa-exclamation-triangle"></i>
-                            </div>
-                            <div class="card-content">
-                                <h3 id="alertCount">0</h3>
-                                <p>Active Alerts</p>
-                            </div>
-                        </div>
-                        <div class="dashboard-card notification-stats">
-                            <div class="card-icon unread">
-                                <i class="fas fa-envelope"></i>
-                            </div>
-                            <div class="card-content">
-                                <h3 id="unreadCount">0</h3>
-                                <p>Unread Notifications</p>
-                            </div>
-                        </div>
-                        <div class="dashboard-card notification-stats">
-                            <div class="card-icon today">
-                                <i class="fas fa-clock"></i>
-                            </div>
-                            <div class="card-content">
-                                <h3 id="todayCount">0</h3>
-                                <p>Today's Updates</p>
-                            </div>
-                        </div>
-                        <div class="dashboard-card notification-stats">
-                            <div class="card-icon priority">
-                                <i class="fas fa-star"></i>
-                            </div>
-                            <div class="card-content">
-                                <h3 id="priorityCount">0</h3>
-                                <p>High Priority</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Notification Categories -->
-                    <div class="dashboard-grid">
-                        <!-- Low Stock Alerts -->
-                        <div class="dashboard-card">
-                            <div class="card-header">
-                                <h3><i class="fas fa-box-open"></i> Low Stock Alerts</h3>
-                                <span class="badge" id="lowStockBadge">0</span>
-                            </div>
-                            <div class="notification-panel" id="lowStockPanel">
-                                <div class="empty-state">
-                                    <i class="fas fa-check-circle"></i>
-                                    <p>All stock levels are healthy</p>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Recent Sales -->
-                        <div class="dashboard-card">
-                            <div class="card-header">
-                                <h3><i class="fas fa-shopping-cart"></i> Recent Sales</h3>
-                                <span class="badge" id="recentSalesBadge">0</span>
-                            </div>
-                            <div class="notification-panel" id="recentSalesPanel">
-                                <div class="empty-state">
-                                    <i class="fas fa-chart-line"></i>
-                                    <p>No recent sales to display</p>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- System Updates -->
-                        <div class="dashboard-card">
-                            <div class="card-header">
-                                <h3><i class="fas fa-cog"></i> System Updates</h3>
-                                <span class="badge" id="systemUpdatesBadge">0</span>
-                            </div>
-                            <div class="notification-panel" id="systemUpdatesPanel">
-                                <div class="empty-state">
-                                    <i class="fas fa-info-circle"></i>
-                                    <p>No system updates</p>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- All Notifications -->
-                        <div class="dashboard-card full-width">
-                            <div class="card-header">
-                                <h3><i class="fas fa-list"></i> All Notifications</h3>
-                                <div class="filter-tabs">
-                                    <button class="filter-tab active" data-filter="all">All</button>
-                                    <button class="filter-tab" data-filter="unread">Unread</button>
-                                    <button class="filter-tab" data-filter="alerts">Alerts</button>
-                                    <button class="filter-tab" data-filter="today">Today</button>
-                                </div>
-                            </div>
-                            <div class="notification-list-dashboard" id="allNotificationsList">
-                                <div class="empty-state">
-                                    <i class="fas fa-bell-slash"></i>
-                                    <h4>No notifications</h4>
-                                    <p>You're all caught up!</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </section>
-
-                <!-- Settings Dashboard Section -->
-                <section id="settings" class="content-section">
                     <div class="section-header">
                         <h2><i class="fas fa-cog"></i> Settings & Preferences</h2>
                         <div class="section-actions">
@@ -1476,12 +1370,32 @@
                         <!-- Business Settings -->
                         <div class="dashboard-card">
                             <div class="card-header">
-                                <h3><i class="fas fa-store"></i> Business Settings</h3>
+                                <h3><i class="fas fa-store"></i> Business Information</h3>
                             </div>
                             <div class="settings-panel">
                                 <div class="setting-group">
                                     <label class="setting-label">Business Name</label>
-                                    <input type="text" id="businessName" class="dashboard-input" placeholder="J'MONIC ENTERPRISE">
+                                    <input type="text" id="businessName" class="dashboard-input" placeholder="J'MONIC ENTERPRISE" value="J'MONIC ENTERPRISE">
+                                </div>
+                                
+                                <div class="setting-group">
+                                    <label class="setting-label">Owner/Manager Name</label>
+                                    <input type="text" id="ownerName" class="dashboard-input" placeholder="Business Owner" value="Business Owner">
+                                </div>
+                                
+                                <div class="setting-group">
+                                    <label class="setting-label">Contact Email</label>
+                                    <input type="email" id="businessEmail" class="dashboard-input" placeholder="contact@jmonic.com">
+                                </div>
+                                
+                                <div class="setting-group">
+                                    <label class="setting-label">Phone Number</label>
+                                    <input type="tel" id="businessPhone" class="dashboard-input" placeholder="+233 XX XXX XXXX">
+                                </div>
+                                
+                                <div class="setting-group">
+                                    <label class="setting-label">Business Address</label>
+                                    <textarea id="businessAddress" class="dashboard-input" rows="3" placeholder="Enter your business address"></textarea>
                                 </div>
                                 
                                 <div class="setting-group">
@@ -1696,7 +1610,6 @@
                         <select name="paymentMethod" required>
                             <option value="">Select Method</option>
                             <option value="cash">Cash</option>
-                            <option value="card">Credit/Debit Card</option>
                             <option value="transfer">Bank Transfer</option>
                             <option value="mobile_money">Mobile Money</option>
                         </select>
