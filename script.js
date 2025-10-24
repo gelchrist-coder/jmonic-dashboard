@@ -4119,6 +4119,18 @@ document.addEventListener('DOMContentLoaded', function() {
         alert('JavaScript is working!');
     };
     
+    // Cache buster - Force reload of cached content
+    console.log('🔄 J\'MONIC Dashboard loaded - Version:', new Date().toISOString());
+    
+    // Remove any lingering debug panels from cache
+    setTimeout(() => {
+        const debugPanel = document.getElementById('debug-panel');
+        if (debugPanel) {
+            debugPanel.remove();
+            console.log('🧹 Removed cached debug panel');
+        }
+    }, 100);
+    
     // Ensure clearAllData is ALWAYS available globally
     window.clearAllData = window.clearAllData || function() {
         console.log('🆘 Emergency clearAllData called');
