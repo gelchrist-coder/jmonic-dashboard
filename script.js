@@ -5425,13 +5425,36 @@ setTimeout(() => {
         console.log('🧹 Removed existing debug panel');
     }
     
+    // Remove any remaining theme indicator elements or sun icons in header
+    const themeElements = document.querySelectorAll('#themeIndicator, .theme-indicator, .header-actions .fa-sun, .dashboard-header .fa-sun');
+    themeElements.forEach(element => {
+        element.remove();
+        console.log('🧹 Removed theme indicator element');
+    });
+    
+    // Remove any header actions container if it's empty
+    const headerActions = document.querySelector('.header-actions');
+    if (headerActions && headerActions.children.length === 0) {
+        headerActions.remove();
+        console.log('🧹 Removed empty header actions container');
+    }
+    
     // Also remove any debug panels that might be created later
     const observer = new MutationObserver((mutations) => {
         mutations.forEach((mutation) => {
             mutation.addedNodes.forEach((node) => {
-                if (node.nodeType === 1 && (node.id === 'debug-panel' || node.classList?.contains('debug-panel'))) {
-                    node.remove();
-                    console.log('🧹 Prevented debug panel from appearing');
+                if (node.nodeType === 1) {
+                    // Remove debug panels
+                    if (node.id === 'debug-panel' || node.classList?.contains('debug-panel')) {
+                        node.remove();
+                        console.log('🧹 Prevented debug panel from appearing');
+                    }
+                    // Remove any theme indicators that might be added
+                    if (node.id === 'themeIndicator' || node.classList?.contains('theme-indicator') || 
+                        (node.classList?.contains('fa-sun') && node.closest('.dashboard-header'))) {
+                        node.remove();
+                        console.log('🧹 Prevented theme indicator from appearing');
+                    }
                 }
             });
         });
