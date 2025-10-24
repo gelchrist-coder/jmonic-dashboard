@@ -3350,15 +3350,30 @@ class NaturalHairBusinessManager {
     // Clear all data function
     clearAllData() {
         console.log('🗑️ clearAllData() function called');
+        console.log('🔍 Current state - isPerformingDataClear:', this.isPerformingDataClear);
+        console.log('🔍 Current state - currentClearDataModal:', !!this.currentClearDataModal);
         
         // Prevent multiple modal calls
         if (this.isPerformingDataClear || this.currentClearDataModal) {
             console.log('🚫 Clear data operation already in progress');
+            console.log('💡 TIP: If stuck, run window.businessManager.resetClearDataFlags() in console');
             return;
         }
         
         // Create custom confirmation modal
         this.showDataClearConfirmation();
+    }
+
+    // Reset function for stuck flags
+    resetClearDataFlags() {
+        console.log('🔄 Resetting clear data flags...');
+        this.isPerformingDataClear = false;
+        if (this.currentClearDataModal) {
+            this.currentClearDataModal.remove();
+            this.currentClearDataModal = null;
+        }
+        window.clearDataInProgress = false;
+        console.log('✅ All clear data flags reset');
     }
 
     // Custom confirmation modal for data clearing
@@ -3610,6 +3625,9 @@ class NaturalHairBusinessManager {
             
             // Show success notification
             this.showNotification('✅ All data has been cleared successfully! The page will refresh.', 'success');
+            
+            // Reset flag immediately after successful clearing
+            this.isPerformingDataClear = false;
             
             console.log('🔥 Setting timeout for page reload...');
             // Refresh the current page to show empty state after a short delay
@@ -4440,6 +4458,23 @@ document.addEventListener('DOMContentLoaded', function() {
         } else {
             window.emergencyClearAllData();
         }
+    };
+    
+    // Global function to reset stuck flags
+    window.resetClearFlags = function() {
+        console.log('🔄 GLOBAL RESET: Clearing all stuck flags...');
+        if (window.businessManager) {
+            window.businessManager.resetClearDataFlags();
+        }
+        window.clearDataInProgress = false;
+        // Remove any existing modals
+        const existingModals = document.querySelectorAll('[id*="clear"], [class*="modal"]');
+        existingModals.forEach(modal => {
+            if (modal.innerHTML && modal.innerHTML.includes('Clear All Data')) {
+                modal.remove();
+            }
+        });
+        console.log('✅ Global flag reset complete');
     };
     
     // Additional global handlers for reliability
