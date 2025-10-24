@@ -416,6 +416,18 @@ class NaturalHairBusinessManager {
     }
     
     // Product Methods
+    // Standardized reorder level calculation
+    getReorderLevel(product) {
+        return product.reorder_level || product.reorderLevel || product.min_stock_level || 10;
+    }
+
+    // Check if product is low stock using standardized reorder level
+    isLowStock(product) {
+        const stock = parseInt(product.stock_quantity) || 0;
+        const reorderLevel = this.getReorderLevel(product);
+        return stock <= reorderLevel;
+    }
+
     async addProduct(productData) {
         try {
             const result = await this.apiCall('products.php', 'POST', productData);
@@ -454,18 +466,37 @@ class NaturalHairBusinessManager {
                 throw new Error('Product not found');
             }
             
+            const existingProduct = products[productIndex];
+            const oldStockQuantity = existingProduct.stock_quantity || 0;
+            const newStockQuantity = parseInt(productData.stockQuantity) || 0;
+            
             // Update the product while preserving the ID and creation date
             const updatedProduct = {
-                ...products[productIndex],
+                ...existingProduct,
                 sku: productData.sku,
                 name: productData.productName,
                 description: productData.description || '',
                 selling_price: parseFloat(productData.sellingPrice),
                 cost_price: parseFloat(productData.costPrice),
-                stock_quantity: parseInt(productData.stockQuantity),
+                stock_quantity: newStockQuantity,
                 reorder_level: parseInt(productData.reorderLevel) || 10,
                 updated_at: new Date().toISOString()
             };
+            
+            // Log inventory transaction if stock quantity changed
+            if (oldStockQuantity !== newStockQuantity) {
+                const stockDifference = newStockQuantity - oldStockQuantity;
+                this.logInventoryTransaction(
+                    productId,
+                    updatedProduct.name,
+                    'adjustment',
+                    stockDifference,
+                    oldStockQuantity,
+                    newStockQuantity,
+                    'Stock quantity edited'
+                );
+                console.log(`Stock adjustment logged: ${existingProduct.name} changed from ${oldStockQuantity} to ${newStockQuantity} (${stockDifference > 0 ? '+' : ''}${stockDifference})`);
+            }
             
             products[productIndex] = updatedProduct;
             localStorage.setItem('jmonic_products', JSON.stringify(products));
@@ -3302,15 +3333,20 @@ class NaturalHairBusinessManager {
     updateProductStats(products) {
         const totalProducts = products.length;
         const lowStockProducts = products.filter(p => {
-            const stock = p.stock_quantity || 0;
-            const reorderLevel = p.reorderLevel || p.min_stock_level || 5;
+            const stock = parseInt(p.stock_quantity) || 0;
+            const reorderLevel = this.getReorderLevel(p);
             return stock <= reorderLevel;
         }).length;
         
         const totalValue = products.reduce((sum, p) => {
-            const stock = p.stock_quantity || 0;
-            const costPrice = parseFloat(p.cost_price) || 0;
-            return sum + (costPrice * stock);
+            const stock = parseInt(p.stock_quantity) || 0;
+            const costPrice = parseFloat(p.cost_price);
+            
+            // Validate both stock and cost price are positive numbers
+            if (stock >= 0 && !isNaN(costPrice) && costPrice >= 0) {
+                return sum + (costPrice * stock);
+            }
+            return sum;
         }, 0);
 
         // Get unique categories
