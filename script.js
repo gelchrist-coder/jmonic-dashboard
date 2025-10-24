@@ -96,7 +96,7 @@ class NaturalHairBusinessManager {
         const products = JSON.parse(localStorage.getItem('jmonic_products') || '[]');
         
         if (method === 'POST') {
-            // Add new product
+            // Add new product or update existing if SKU exists
             // Validate numeric inputs
             const sellingPrice = parseFloat(data.sellingPrice);
             const costPrice = parseFloat(data.costPrice);
@@ -115,40 +115,90 @@ class NaturalHairBusinessManager {
                 throw new Error('Please enter a valid stock quantity');
             }
             
-            const newProduct = {
-                id: Date.now(),
-                sku: data.sku,
-                name: data.productName,
-                description: data.description || '',
-                selling_price: sellingPrice,
-                cost_price: costPrice,
-                stock_quantity: stockQuantity,
-                reorder_level: reorderLevel,
-                status: 'active',
-                created_at: new Date().toISOString()
-            };
-            products.push(newProduct);
+            // Check if product with same SKU already exists
+            const existingProductIndex = products.findIndex(p => p.sku === data.sku);
+            
+            if (existingProductIndex !== -1) {
+                // Validate that product name matches existing SKU
+                const existingProduct = products[existingProductIndex];
+                if (existingProduct.name.toLowerCase().trim() !== data.productName.toLowerCase().trim()) {
+                    throw new Error(`SKU "${data.sku}" already exists with product name "${existingProduct.name}". Product names must match when using the same SKU.`);
+                }
+                
+                // Update existing product by adding to stock quantity
+                products[existingProductIndex] = {
+                    ...existingProduct,
+                    name: data.productName, // Keep the name consistent
+                    description: data.description || existingProduct.description,
+                    selling_price: sellingPrice,
+                    cost_price: costPrice,
+                    stock_quantity: existingProduct.stock_quantity + stockQuantity, // Add to existing stock
+                    reorder_level: reorderLevel,
+                    updated_at: new Date().toISOString()
+                };
+                
+                // Show update notification
+                this.showLiveNotification(
+                    'Product Updated!', 
+                    `${data.productName} stock updated. New quantity: ${products[existingProductIndex].stock_quantity}`, 
+                    'success', 
+                    'fa-sync-alt'
+                );
+            } else {
+                // Check if product name already exists with different SKU
+                const existingNameIndex = products.findIndex(p => p.name.toLowerCase().trim() === data.productName.toLowerCase().trim());
+                if (existingNameIndex !== -1) {
+                    const existingProductWithName = products[existingNameIndex];
+                    throw new Error(`Product name "${data.productName}" already exists with SKU "${existingProductWithName.sku}". Please use the existing SKU or choose a different product name.`);
+                }
+                // Create new product
+                const newProduct = {
+                    id: Date.now(),
+                    sku: data.sku,
+                    name: data.productName,
+                    description: data.description || '',
+                    selling_price: sellingPrice,
+                    cost_price: costPrice,
+                    stock_quantity: stockQuantity,
+                    reorder_level: reorderLevel,
+                    status: 'active',
+                    created_at: new Date().toISOString()
+                };
+                products.push(newProduct);
+                
+                // Show new product notification
+                this.showLiveNotification(
+                    'Product Added!', 
+                    `${data.productName} has been added to inventory`, 
+                    'success', 
+                    'fa-plus-circle'
+                );
+            }
             localStorage.setItem('jmonic_products', JSON.stringify(products));
             
-            // Log initial stock as inventory transaction
-            if (newProduct.stock_quantity > 0) {
-                this.logInventoryTransaction(
-                    newProduct.id,
-                    newProduct.name,
-                    'purchase',
-                    newProduct.stock_quantity,
-                    0,
-                    newProduct.stock_quantity,
-                    'Initial stock entry'
-                );
+            // Log initial stock as inventory transaction for new products only
+            if (!existingProductIndex || existingProductIndex === -1) {
+                const currentProduct = products[products.length - 1]; // Get the newly added product
+                if (currentProduct && currentProduct.stock_quantity > 0) {
+                    this.logInventoryTransaction(
+                        currentProduct.id,
+                        currentProduct.name,
+                        'purchase',
+                        currentProduct.stock_quantity,
+                        0,
+                        currentProduct.stock_quantity,
+                        'Initial stock entry'
+                    );
+                }
             }
             
             // Debug: Check if product should be low stock
-            console.log('New product added:', {
-                name: newProduct.name,
-                stock: newProduct.stock_quantity,
-                reorderLevel: newProduct.reorder_level,
-                isLowStock: newProduct.stock_quantity <= newProduct.reorder_level
+            const addedProduct = existingProductIndex !== -1 ? products[existingProductIndex] : products[products.length - 1];
+            console.log('Product processed:', {
+                name: addedProduct.name,
+                stock: addedProduct.stock_quantity,
+                reorderLevel: addedProduct.reorder_level,
+                isLowStock: addedProduct.stock_quantity <= addedProduct.reorder_level
             });
             
             // Update product stats if on products page
@@ -158,7 +208,7 @@ class NaturalHairBusinessManager {
                 }
             }, 100);
             
-            return { success: true, data: newProduct, message: 'Product added successfully' };
+            return { success: true, data: addedProduct, message: 'Product processed successfully' };
         } else {
             // Get products
             return { success: true, data: products };
@@ -301,6 +351,7 @@ class NaturalHairBusinessManager {
                 today_sales: todayRevenue,
                 total_products: products.length,
                 low_stock_count: lowStockProducts.length,
+                low_stock_products: lowStockProducts,
                 recent_sales: sales.slice(-5).reverse()
             }
         };
@@ -2237,28 +2288,83 @@ class NaturalHairBusinessManager {
         const notificationBadge = document.querySelector('.notification-badge');
         const headerNotificationBadge = document.getElementById('headerNotificationBadge');
         const notificationCount = document.getElementById('notificationCount');
+        const notificationBell = document.getElementById('notificationBell');
         
-        if (!notificationList) return;
+        console.log('🔔 Loading notifications...', { notificationList: !!notificationList });
+        
+        if (!notificationList) {
+            console.error('❌ Notification list element not found');
+            return;
+        }
         
         // Get low stock products
         const products = JSON.parse(localStorage.getItem('jmonic_products') || '[]');
+        console.log('📦 Products found:', products.length);
+        
         const lowStockProducts = products.filter(p => {
             const stock = p.stock_quantity || 0;
             const reorderLevel = p.reorderLevel || p.min_stock_level || 5;
-            return stock <= reorderLevel;
+            const isLowStock = stock <= reorderLevel;
+            console.log(`📦 ${p.name}: stock=${stock}, reorder=${reorderLevel}, lowStock=${isLowStock}`);
+            return isLowStock;
         });
+        
+        console.log('⚠️ Low stock products:', lowStockProducts.length);
         
         let notifications = [];
         
-        // Add low stock notifications (simplified)
+        // Add low stock notifications with better logic
         lowStockProducts.forEach(product => {
+            const stockLevel = product.stock_quantity || 0;
+            let priority = 'medium';
+            let icon = 'fa-exclamation-triangle';
+            let title = 'Low Stock Alert';
+            let message = `${product.name} - Only ${stockLevel} remaining`;
+            
+            // Determine urgency based on stock level
+            if (stockLevel === 0) {
+                priority = 'high';
+                icon = 'fa-times-circle';
+                title = 'Out of Stock';
+                message = `${product.name} is completely out of stock`;
+            } else if (stockLevel <= 2) {
+                priority = 'high';
+                title = 'Critical Stock Alert';
+                message = `${product.name} - Only ${stockLevel} left!`;
+            } else if (stockLevel <= product.reorderLevel) {
+                priority = 'medium';
+                title = 'Low Stock Alert';
+                message = `${product.name} - ${stockLevel} remaining (reorder level: ${product.reorderLevel})`;
+            }
+            
             notifications.push({
                 id: `low-stock-${product.id}`,
                 type: 'warning',
-                icon: 'fa-exclamation-triangle',
-                title: `Low Stock: ${product.name}`,
-                message: `Only ${product.stock_quantity || 0} remaining`,
-                time: 'Now'
+                icon: icon,
+                title: title,
+                message: message,
+                time: 'Now',
+                priority: priority
+            });
+        });
+        
+        // Add recent sales notifications (last 24 hours)
+        const sales = JSON.parse(localStorage.getItem('jmonic_sales') || '[]');
+        const recentSales = sales.filter(sale => {
+            const saleDate = new Date(sale.date || sale.created_at);
+            const dayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+            return saleDate > dayAgo;
+        }).slice(0, 3); // Only show last 3
+        
+        recentSales.forEach(sale => {
+            notifications.push({
+                id: `sale-${sale.id}`,
+                type: 'success',
+                icon: 'fa-shopping-cart',
+                title: 'New Sale',
+                message: `${sale.customer_name || 'Customer'} purchased items worth ₵${sale.total_amount}`,
+                time: this.formatTimeAgo(new Date(sale.date || sale.created_at)),
+                priority: 'medium'
             });
         });
         
@@ -2269,38 +2375,84 @@ class NaturalHairBusinessManager {
                 type: 'info',
                 icon: 'fa-info-circle',
                 title: 'Welcome to J\'MONIC Dashboard',
-                message: 'Add your first product to get started',
-                time: 'Getting Started'
+                message: 'Start by adding your first product to track inventory and sales',
+                time: 'Getting Started',
+                priority: 'low'
             });
         }
         
-        // Update notification badges (simplified)
-        const unreadCount = notifications.length;
+        // Sort by priority
+        const priorityOrder = { 'high': 3, 'medium': 2, 'low': 1 };
+        notifications.sort((a, b) => priorityOrder[b.priority] - priorityOrder[a.priority]);
+        
+        console.log('🔔 Total notifications:', notifications.length);
+        
+        // Update notification badges with enhanced animation - only for critical alerts
+        const criticalAlerts = notifications.filter(n => {
+            if (n.type === 'warning' && n.id.startsWith('low-stock-')) {
+                // Only consider it critical if stock is 0 or very low (1-2 units)
+                const product = lowStockProducts.find(p => `low-stock-${p.id}` === n.id);
+                return product && product.stock_quantity <= 2;
+            }
+            return n.priority === 'high';
+        });
+        
+        const unreadCount = criticalAlerts.length;
         
         [notificationBadge, headerNotificationBadge].forEach(badge => {
             if (badge) {
                 if (unreadCount > 0) {
                     badge.textContent = unreadCount;
                     badge.style.display = 'block';
+                    badge.style.animation = 'badge-bounce 0.6s ease-out';
                 } else {
                     badge.style.display = 'none';
                 }
             }
         });
         
-        if (notificationCount) {
-            notificationCount.textContent = unreadCount === 0 ? 'All good!' : 
-                unreadCount === 1 ? '1 alert' : `${unreadCount} alerts`;
+        // Update notification bell state
+        if (notificationBell) {
+            if (unreadCount > 0) {
+                notificationBell.classList.add('has-alerts');
+            } else {
+                notificationBell.classList.remove('has-alerts');
+            }
         }
         
-        // Simple notification display
+        if (notificationCount) {
+            notificationCount.textContent = unreadCount === 0 ? 'All good!' : 
+                unreadCount === 1 ? '1 critical alert' : `${unreadCount} critical alerts`;
+        }
+        
+        // Enhanced notification display
         this.renderSimpleNotifications(notifications);
     }
     
-    // Header notification functions
-    showLiveNotification(title, message, type = 'info', icon = 'fa-info-circle') {
+    // Helper function to format time ago
+    formatTimeAgo(date) {
+        const now = new Date();
+        const diff = now - date;
+        const minutes = Math.floor(diff / 60000);
+        const hours = Math.floor(diff / 3600000);
+        const days = Math.floor(diff / 86400000);
+        
+        if (minutes < 1) return 'Just now';
+        if (minutes < 60) return `${minutes}m ago`;
+        if (hours < 24) return `${hours}h ago`;
+        if (days < 7) return `${days}d ago`;
+        return date.toLocaleDateString();
+    }
+    
+    // Enhanced header notification functions
+    showLiveNotification(title, message, type = 'info', icon = 'fa-info-circle', duration = 4000) {
         const liveNotification = document.getElementById('liveNotification');
         if (!liveNotification) return;
+        
+        console.log('🔔 Showing live notification:', { title, message, type });
+        
+        // Play notification sound (if supported)
+        this.playNotificationSound(type);
         
         // Update content
         const titleEl = liveNotification.querySelector('.notification-title');
@@ -2314,20 +2466,89 @@ class NaturalHairBusinessManager {
         // Update type class
         liveNotification.className = `live-notification ${type}`;
         
-        // Show notification
+        // Show notification with animation
         liveNotification.style.display = 'block';
+        liveNotification.style.animation = 'notification-slide-in 0.4s cubic-bezier(0.4, 0, 0.2, 1)';
         
-        // Auto hide after 4 seconds
+        // Trigger bell animation
+        const notificationBell = document.getElementById('notificationBell');
+        if (notificationBell) {
+            notificationBell.classList.add('pulse-notification');
+            setTimeout(() => notificationBell.classList.remove('pulse-notification'), 600);
+        }
+        
+        // Auto hide after specified duration
         setTimeout(() => {
-            liveNotification.style.animation = 'slideOutRight 0.3s ease';
+            if (liveNotification) {
+                liveNotification.style.animation = 'notification-slide-out 0.3s ease';
+                setTimeout(() => {
+                    liveNotification.style.display = 'none';
+                }, 300);
+            }
+        }, duration);
+        
+        // Add click to dismiss
+        liveNotification.onclick = () => {
+            liveNotification.style.animation = 'notification-slide-out 0.3s ease';
             setTimeout(() => {
                 liveNotification.style.display = 'none';
-                liveNotification.style.animation = '';
             }, 300);
-        }, 4000);
+        };
         
-        // Update badge
-        this.updateHeaderNotificationBadge();
+        // Update notification count
+        this.loadNotifications();
+    }
+    
+    // Play notification sound based on type
+    playNotificationSound(type = 'info') {
+        try {
+            // Create audio context if supported
+            if (typeof AudioContext !== 'undefined' || typeof webkitAudioContext !== 'undefined') {
+                const audioContext = new (AudioContext || webkitAudioContext)();
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                // Different frequencies for different types
+                const frequencies = {
+                    'success': 800,
+                    'info': 600,
+                    'warning': 400,
+                    'error': 300
+                };
+                
+                oscillator.frequency.setValueAtTime(frequencies[type] || 600, audioContext.currentTime);
+                oscillator.type = 'sine';
+                
+                gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
+                
+                oscillator.start(audioContext.currentTime);
+                oscillator.stop(audioContext.currentTime + 0.1);
+            }
+        } catch (error) {
+            console.log('🔇 Audio not supported or disabled');
+        }
+    }
+    
+    // Enhanced notification bell functionality
+    triggerNotificationAlert(message, type = 'info') {
+        const notificationBell = document.getElementById('notificationBell');
+        if (!notificationBell) return;
+        
+        // Add visual feedback
+        notificationBell.classList.add('has-alerts');
+        notificationBell.classList.add('pulse-notification');
+        
+        // Show live notification
+        this.showLiveNotification('Alert', message, type);
+        
+        // Remove pulse after animation
+        setTimeout(() => {
+            notificationBell.classList.remove('pulse-notification');
+        }, 600);
     }
     
     updateHeaderNotificationBadge() {
@@ -2448,33 +2669,72 @@ class NaturalHairBusinessManager {
     toggleNotificationDropdown() {
         const dropdown = document.getElementById('notificationDropdown');
         const notificationBell = document.getElementById('notificationBell');
+        const headerNotificationBadge = document.getElementById('headerNotificationBadge');
+        
+        console.log('🔔 Toggle notification dropdown', { dropdown: !!dropdown, bell: !!notificationBell });
         
         if (dropdown) {
-            const isVisible = dropdown.style.display !== 'none';
+            const isVisible = dropdown.style.display === 'block';
+            console.log('🔔 Dropdown current state:', isVisible ? 'visible' : 'hidden');
             
             if (isVisible) {
-                // Hide dropdown with animation
-                dropdown.style.animation = 'dropdownSlideOut 0.2s ease-in';
-                setTimeout(() => {
-                    dropdown.style.display = 'none';
-                    dropdown.style.animation = '';
-                }, 200);
+                // Hide dropdown
+                dropdown.style.display = 'none';
+                dropdown.classList.remove('show');
+                console.log('🔔 Hiding dropdown');
+                // Remove document click listener
+                document.removeEventListener('click', this.handleNotificationClickOutside);
             } else {
-                // Show dropdown with animation
-                dropdown.style.display = 'block';
-                dropdown.style.animation = 'dropdownSlide 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
-                
-                // Load notifications when opening
+                // Show dropdown and load notifications
                 this.loadNotifications();
+                dropdown.style.display = 'block';
+                dropdown.style.visibility = 'visible';
+                dropdown.style.opacity = '1';
+                dropdown.style.zIndex = '99999';
+                dropdown.classList.add('show');
+                console.log('🔔 Showing dropdown');
                 
-                // Remove alert animation when dropdown is opened
+                // Hide notification badge since user has seen the notifications
+                if (headerNotificationBadge) {
+                    headerNotificationBadge.style.display = 'none';
+                }
+                
+                // Remove has-alerts class from bell
                 if (notificationBell) {
                     notificationBell.classList.remove('has-alerts');
                 }
+                
+                // Force repaint
+                dropdown.offsetHeight;
+                
+                // Add a slight pulse to the bell
+                if (notificationBell) {
+                    notificationBell.classList.add('pulse-notification');
+                    setTimeout(() => notificationBell.classList.remove('pulse-notification'), 600);
+                }
+                
+                // Add document click listener to close when clicking outside
+                setTimeout(() => {
+                    document.addEventListener('click', this.handleNotificationClickOutside.bind(this));
+                }, 100);
             }
+        } else {
+            console.error('❌ Notification dropdown element not found');
         }
     }
     
+    // Handle clicking outside notification dropdown
+    handleNotificationClickOutside(event) {
+        const dropdown = document.getElementById('notificationDropdown');
+        const notificationContainer = document.querySelector('.notification-container');
+        
+        if (dropdown && notificationContainer && !notificationContainer.contains(event.target)) {
+            dropdown.style.display = 'none';
+            dropdown.classList.remove('show');
+            document.removeEventListener('click', this.handleNotificationClickOutside);
+        }
+    }
+
     updateNotificationCounts() {
         const unreadCount = this.allNotifications ? this.allNotifications.filter(n => !n.read).length : 0;
         const notificationCount = document.getElementById('notificationCount');
@@ -2510,86 +2770,6 @@ class NaturalHairBusinessManager {
         });
     }
     
-    updateNotificationsDashboard() {
-        if (!this.allNotifications) return;
-        
-        // Update stats cards
-        const alertCount = this.allNotifications.filter(n => n.category === 'alerts' || n.priority === 'high').length;
-        const unreadCount = this.allNotifications.filter(n => !n.read).length;
-        const todayCount = this.allNotifications.filter(n => {
-            const notifDate = new Date(n.timestamp || Date.now());
-            const today = new Date();
-            return notifDate.toDateString() === today.toDateString();
-        }).length;
-        const priorityCount = this.allNotifications.filter(n => n.priority === 'high').length;
-        
-        const alertCountEl = document.getElementById('alertCount');
-        const unreadCountEl = document.getElementById('unreadCount');
-        const todayCountEl = document.getElementById('todayCount');
-        const priorityCountEl = document.getElementById('priorityCount');
-        
-        if (alertCountEl) alertCountEl.textContent = alertCount;
-        if (unreadCountEl) unreadCountEl.textContent = unreadCount;
-        if (todayCountEl) todayCountEl.textContent = todayCount;
-        if (priorityCountEl) priorityCountEl.textContent = priorityCount;
-        
-        // Update category panels
-        this.updateLowStockPanel();
-        this.updateRecentSalesPanel();
-        this.updateSystemUpdatesPanel();
-        this.updateAllNotificationsList();
-        
-        // Initialize filter tabs
-        this.initializeDashboardFilters();
-    }
-    
-    updateLowStockPanel() {
-        const panel = document.getElementById('lowStockPanel');
-        const badge = document.getElementById('lowStockBadge');
-        
-        if (!panel || !badge) return;
-        
-        const lowStockNotifications = this.allNotifications.filter(n => n.category === 'alerts');
-        badge.textContent = lowStockNotifications.length;
-        
-        if (lowStockNotifications.length === 0) {
-            panel.innerHTML = `
-                <div class="empty-state">
-                    <i class="fas fa-check-circle"></i>
-                    <p>All stock levels are healthy</p>
-                </div>
-            `;
-        } else {
-            panel.innerHTML = lowStockNotifications.map(n => `
-                <div class="notification-item-dashboard alert ${n.read ? 'read' : 'unread'}">
-                    <div class="notification-icon ${n.type}">
-                        <i class="fas ${n.icon}"></i>
-                    </div>
-                    <div class="notification-content">
-                        <div class="notification-title">${n.title}</div>
-                        <div class="notification-message">${n.message}</div>
-                        <div class="notification-time">${n.time}</div>
-                    </div>
-                </div>
-            `).join('');
-        }
-    }
-    
-    initializeDashboardFilters() {
-        const filterTabs = document.querySelectorAll('.filter-tab');
-        filterTabs.forEach(tab => {
-            tab.addEventListener('click', () => {
-                // Update active tab
-                filterTabs.forEach(t => t.classList.remove('active'));
-                tab.classList.add('active');
-                
-                // Filter and update list
-                const filter = tab.dataset.filter;
-                this.filterDashboardNotifications(filter);
-            });
-        });
-    }
-    
     getTimeAgo(date) {
         const now = new Date();
         const diff = now - date;
@@ -2617,6 +2797,30 @@ class NaturalHairBusinessManager {
         this.showNotification('Notifications cleared', 'success');
     }
     
+    // Test notification functionality (for demonstration)
+    testNotifications() {
+        console.log('🧪 Testing notification system...');
+        
+        // Test different notification types
+        setTimeout(() => {
+            this.showLiveNotification('Product Added', 'New iPhone 15 Pro added to inventory', 'success', 'fa-plus-circle');
+        }, 1000);
+        
+        setTimeout(() => {
+            this.showLiveNotification('Low Stock Alert', 'Samsung Galaxy S24 - Only 2 remaining', 'warning', 'fa-exclamation-triangle');
+        }, 3000);
+        
+        setTimeout(() => {
+            this.showLiveNotification('Sale Completed', 'Customer purchased items worth ₵2,450', 'success', 'fa-shopping-cart');
+        }, 5000);
+        
+        setTimeout(() => {
+            this.showLiveNotification('System Info', 'Dashboard backup completed successfully', 'info', 'fa-info-circle');
+        }, 7000);
+        
+        console.log('🧪 Test notifications scheduled');
+    }
+    
     loadSettings() {
         const settings = JSON.parse(localStorage.getItem('jmonic_settings') || '{}');
         
@@ -2626,10 +2830,24 @@ class NaturalHairBusinessManager {
             radio.checked = radio.value === (settings.theme || 'light');
         });
         
+        // Load business information
+        const businessName = document.getElementById('businessName');
+        const ownerName = document.getElementById('ownerName');
+        const businessEmail = document.getElementById('businessEmail');
+        const businessPhone = document.getElementById('businessPhone');
+        const businessAddress = document.getElementById('businessAddress');
+        
+        if (businessName) businessName.value = settings.businessName || 'J\'MONIC ENTERPRISE';
+        if (ownerName) ownerName.value = settings.ownerName || 'Business Owner';
+        if (businessEmail) businessEmail.value = settings.businessEmail || '';
+        if (businessPhone) businessPhone.value = settings.businessPhone || '';
+        if (businessAddress) businessAddress.value = settings.businessAddress || '';
+        
         // Load other settings
         const currencySelector = document.getElementById('currencySelector');
         const currencySelectorDash = document.getElementById('currencySelector-dash');
-        const languageSelector = document.getElementById('languageSelector');
+        const languageSelector = document.getElementById('languageSelector-dash');
+        const timezoneSelector = document.getElementById('timezoneSelector');
         const lowStockLevel = document.getElementById('lowStockLevel') || document.getElementById('lowStockLevel-dash');
         const enableAnalytics = document.getElementById('enableAnalytics') || document.getElementById('enableAnalytics-dash');
         const lowStockAlerts = document.getElementById('lowStockAlerts') || document.getElementById('lowStockAlerts-dash');
@@ -2639,6 +2857,7 @@ class NaturalHairBusinessManager {
         if (currencySelector) currencySelector.value = settings.currency || 'GHS';
         if (currencySelectorDash) currencySelectorDash.value = settings.currency || 'GHS';
         if (languageSelector) languageSelector.value = settings.language || 'en';
+        if (timezoneSelector) timezoneSelector.value = settings.timezone || 'Africa/Accra';
         if (lowStockLevel) lowStockLevel.value = settings.lowStockLevel || 5;
         if (enableAnalytics) enableAnalytics.checked = settings.enableAnalytics !== false;
         if (lowStockAlerts) lowStockAlerts.checked = settings.lowStockAlerts !== false;
@@ -2647,6 +2866,16 @@ class NaturalHairBusinessManager {
         
         // Apply theme immediately
         this.applyTheme(settings.theme || 'light');
+        
+        // Update header with owner name
+        this.updateOwnerNameInHeader(settings.ownerName);
+        
+        // Add real-time update for owner name
+        if (ownerName) {
+            ownerName.addEventListener('input', (e) => {
+                this.updateOwnerNameInHeader(e.target.value);
+            });
+        }
         
         // Initialize settings tabs
         this.initializeSettingsTabs();
@@ -2664,7 +2893,13 @@ class NaturalHairBusinessManager {
         const settings = {
             theme: themeRadio?.value || 'light',
             currency: currency,
-            language: document.getElementById('languageSelector')?.value || 'en',
+            language: document.getElementById('languageSelector-dash')?.value || 'en',
+            timezone: document.getElementById('timezoneSelector')?.value || 'Africa/Accra',
+            businessName: document.getElementById('businessName')?.value || 'J\'MONIC ENTERPRISE',
+            ownerName: document.getElementById('ownerName')?.value || 'Business Owner',
+            businessEmail: document.getElementById('businessEmail')?.value || '',
+            businessPhone: document.getElementById('businessPhone')?.value || '',
+            businessAddress: document.getElementById('businessAddress')?.value || '',
             lowStockLevel: parseInt(document.getElementById('lowStockLevel')?.value || document.getElementById('lowStockLevel-dash')?.value) || 5,
             enableAnalytics: (document.getElementById('enableAnalytics')?.checked || document.getElementById('enableAnalytics-dash')?.checked) !== false,
             lowStockAlerts: (document.getElementById('lowStockAlerts')?.checked || document.getElementById('lowStockAlerts-dash')?.checked) !== false,
@@ -2676,71 +2911,57 @@ class NaturalHairBusinessManager {
         this.applySettings(settings);
         this.showNotification('Settings saved successfully!', 'success');
         
+        // Update business name in header if it changed
+        this.updateBusinessNameInHeader(settings.businessName);
+        
+        // Update owner name in header if it changed
+        this.updateOwnerNameInHeader(settings.ownerName);
+        
         // Add save animation
-        const saveBtn = document.querySelector('.footer-actions .btn-primary');
+        const saveBtn = document.querySelector('.section-actions .btn-primary');
         if (saveBtn) {
+            const originalText = saveBtn.innerHTML;
             saveBtn.innerHTML = '<i class="fas fa-check"></i> Saved!';
+            saveBtn.classList.add('success');
             setTimeout(() => {
-                saveBtn.innerHTML = '<i class="fas fa-save"></i> Save Changes';
+                saveBtn.innerHTML = originalText;
+                saveBtn.classList.remove('success');
             }, 2000);
         }
     }
     
-    resetSettings() {
-        // Reset to default settings
-        const defaultSettings = {
-            theme: 'light',
-            currency: 'GHS',
-            language: 'en',
-            lowStockLevel: 5,
-            enableAnalytics: true,
-            lowStockAlerts: true,
-            salesNotifications: true,
-            autoBackup: true
-        };
-        
-        // Apply default settings to UI
-        const themeInputs = document.querySelectorAll('input[name="theme"], input[name="theme-dash"]');
-        themeInputs.forEach(input => {
-            input.checked = input.value === defaultSettings.theme;
-        });
-        
-        const currencySelector = document.getElementById('currencySelector');
-        const currencySelectorDash = document.getElementById('currencySelector-dash');
-        const languageSelector = document.getElementById('languageSelector');
-        const lowStockLevel = document.getElementById('lowStockLevel');
-        const enableAnalytics = document.getElementById('enableAnalytics');
-        const lowStockAlerts = document.getElementById('lowStockAlerts');
-        const salesNotifications = document.getElementById('salesNotifications');
-        const autoBackup = document.getElementById('autoBackup');
-        
-        if (currencySelector) currencySelector.value = defaultSettings.currency;
-        if (currencySelectorDash) currencySelectorDash.value = defaultSettings.currency;
-        if (languageSelector) languageSelector.value = defaultSettings.language;
-        if (lowStockLevel) lowStockLevel.value = defaultSettings.lowStockLevel;
-        if (enableAnalytics) enableAnalytics.checked = defaultSettings.enableAnalytics;
-        if (lowStockAlerts) lowStockAlerts.checked = defaultSettings.lowStockAlerts;
-        if (salesNotifications) salesNotifications.checked = defaultSettings.salesNotifications;
-        if (autoBackup) autoBackup.checked = defaultSettings.autoBackup;
-        
-        // Apply theme immediately using global function
-        if (typeof applyThemeGlobal === 'function') {
-            applyThemeGlobal(defaultSettings.theme);
+    updateBusinessNameInHeader(businessName) {
+        // Update any business name displays in the header or throughout the app
+        const headerTitle = document.querySelector('.logo h2');
+        if (headerTitle && businessName && businessName !== 'J\'MONIC ENTERPRISE') {
+            headerTitle.textContent = businessName;
         }
         
-        // Save the default settings
-        localStorage.setItem('jmonic_settings', JSON.stringify(defaultSettings));
-        this.applySettings(defaultSettings);
+        // Update page title
+        if (businessName) {
+            document.title = `${businessName} - Business Dashboard`;
+        }
+    }
+    
+    updateOwnerNameInHeader(ownerName) {
+        // Update the owner name in both desktop and mobile headers
+        const userNames = document.querySelectorAll('.user-name');
+        userNames.forEach(element => {
+            if (ownerName && ownerName.trim() !== '') {
+                element.textContent = ownerName;
+            } else {
+                element.textContent = 'Business Owner';
+            }
+        });
         
-        this.showNotification('Settings reset to default successfully!', 'info');
-        
-        // Add reset animation
-        const resetBtn = document.querySelector('.footer-actions .btn-secondary');
-        if (resetBtn) {
-            resetBtn.innerHTML = '<i class="fas fa-check"></i> Reset!';
-            setTimeout(() => {
-                resetBtn.innerHTML = '<i class="fas fa-undo"></i> Reset to Default';
-            }, 2000);
+        // Also update in the mobile header if it exists
+        const mobileUserInfo = document.querySelector('.professional-header .user-info h3');
+        if (mobileUserInfo) {
+            if (ownerName && ownerName.trim() !== '') {
+                mobileUserInfo.textContent = ownerName;
+            } else {
+                mobileUserInfo.textContent = 'Business Owner';
+            }
         }
     }
     
@@ -2767,18 +2988,90 @@ class NaturalHairBusinessManager {
     }
     
     resetSettings() {
+        console.log('Settings: Resetting to default values');
+        
         const defaultSettings = {
+            businessName: 'J\'MONIC ENTERPRISE',
+            ownerName: '',
+            email: '',
+            phone: '',
+            address: '',
             theme: 'light',
             currency: 'GHS',
             language: 'en',
-            lowStockLevel: 5,
-            enableAnalytics: true
+            lowStockLevel: 10,
+            enableAnalytics: true,
+            lowStockAlerts: true,
+            salesNotifications: true,
+            autoBackup: true
         };
         
+        // Get form elements for business information
+        const businessNameInput = document.getElementById('businessName');
+        const businessNameInputDash = document.getElementById('businessNameDash');
+        const ownerNameInput = document.getElementById('ownerName');
+        const emailInput = document.getElementById('email');
+        const phoneInput = document.getElementById('phone');
+        const addressInput = document.getElementById('address');
+        
+        // Get form elements for other settings
+        const themeSelector = document.getElementById('themeSelector');
+        const themeSelectorDash = document.getElementById('themeSelectorDash');
+        const currencySelector = document.getElementById('currencySelector');
+        const currencySelectorDash = document.getElementById('currencySelectorDash');
+        const languageSelector = document.getElementById('languageSelector');
+        const lowStockLevel = document.getElementById('lowStockLevel');
+        const enableAnalytics = document.getElementById('enableAnalytics');
+        const lowStockAlerts = document.getElementById('lowStockAlerts');
+        const salesNotifications = document.getElementById('salesNotifications');
+        const autoBackup = document.getElementById('autoBackup');
+        const autoBackupDash = document.getElementById('autoBackupDash');
+        
+        // Reset business information fields
+        if (businessNameInput) businessNameInput.value = defaultSettings.businessName;
+        if (businessNameInputDash) businessNameInputDash.value = defaultSettings.businessName;
+        if (ownerNameInput) ownerNameInput.value = defaultSettings.ownerName;
+        if (emailInput) emailInput.value = defaultSettings.email;
+        if (phoneInput) phoneInput.value = defaultSettings.phone;
+        if (addressInput) addressInput.value = defaultSettings.address;
+        
+        // Reset other settings fields
+        if (themeSelector) themeSelector.value = defaultSettings.theme;
+        if (themeSelectorDash) themeSelectorDash.value = defaultSettings.theme;
+        if (currencySelector) currencySelector.value = defaultSettings.currency;
+        if (currencySelectorDash) currencySelectorDash.value = defaultSettings.currency;
+        if (languageSelector) languageSelector.value = defaultSettings.language;
+        if (lowStockLevel) lowStockLevel.value = defaultSettings.lowStockLevel;
+        if (enableAnalytics) enableAnalytics.checked = defaultSettings.enableAnalytics;
+        if (lowStockAlerts) lowStockAlerts.checked = defaultSettings.lowStockAlerts;
+        if (salesNotifications) salesNotifications.checked = defaultSettings.salesNotifications;
+        if (autoBackup) autoBackup.checked = defaultSettings.autoBackup;
+        if (autoBackupDash) autoBackupDash.checked = defaultSettings.autoBackup;
+        
+        // Apply theme immediately
+        if (typeof applyThemeGlobal === 'function') {
+            applyThemeGlobal(defaultSettings.theme);
+        }
+        
+        // Save settings and apply
         localStorage.setItem('jmonic_settings', JSON.stringify(defaultSettings));
-        this.loadSettings();
         this.applySettings(defaultSettings);
-        this.showNotification('Settings reset to default', 'success');
+        
+        // Update business name in header
+        this.updateBusinessNameInHeader(defaultSettings.businessName);
+        
+        this.showNotification('Settings reset to default successfully!', 'success');
+        
+        // Add visual feedback to reset button
+        const resetBtn = document.querySelector('.footer-actions .btn-secondary');
+        if (resetBtn) {
+            resetBtn.innerHTML = '<i class="fas fa-check"></i> Reset Complete!';
+            resetBtn.style.background = '#28a745';
+            setTimeout(() => {
+                resetBtn.innerHTML = '<i class="fas fa-undo"></i> Reset to Default';
+                resetBtn.style.background = '';
+            }, 2000);
+        }
     }
     
     applySettings(settings) {
@@ -2889,6 +3182,12 @@ class NaturalHairBusinessManager {
     updateLowStockAlerts(lowStockProducts) {
         const alertsList = document.querySelector('.alert-list');
         if (!alertsList) return;
+        
+        // Ensure lowStockProducts is an array
+        if (!Array.isArray(lowStockProducts)) {
+            console.warn('Low stock products is not an array:', lowStockProducts);
+            lowStockProducts = [];
+        }
         
         alertsList.innerHTML = '';
         
@@ -5041,27 +5340,44 @@ async function handleAddProductSubmit(e) {
     // Check if we're editing an existing product
     const editingId = form.dataset.editingId;
     
-    let result;
-    if (editingId) {
-        // Update existing product
-        result = await businessManager.updateProduct(editingId, productData);
-    } else {
-        // Add new product
-        result = await businessManager.addProduct(productData);
-    }
-    
-    if (result) {
-        closeModal('addProductModal');
+    try {
+        let result;
+        if (editingId) {
+            // Update existing product
+            result = await businessManager.updateProduct(editingId, productData);
+        } else {
+            // Add new product
+            result = await businessManager.addProduct(productData);
+        }
         
-        // Reset form and modal state
-        form.reset();
-        delete form.dataset.editingId;
-        document.querySelector('#addProductModal h3').textContent = 'Add New Product';
-        document.querySelector('#addProductModal button[type="submit"]').textContent = 'Add Product';
+        if (result) {
+            closeModal('addProductModal');
+            
+            // Reset form and modal state
+            form.reset();
+            delete form.dataset.editingId;
+            document.querySelector('#addProductModal h3').textContent = 'Add New Product';
+            document.querySelector('#addProductModal button[type="submit"]').textContent = 'Add Product';
+            
+            // Force refresh the products table and low stock data
+            await businessManager.loadProductsInventory();
+            businessManager.refreshLowStockData();
+        }
+    } catch (error) {
+        // Show validation error to user
+        console.error('Product validation error:', error);
         
-        // Force refresh the products table and low stock data
-        await businessManager.loadProductsInventory();
-        businessManager.refreshLowStockData();
+        // Display error in modal or as notification
+        if (businessManager && businessManager.showLiveNotification) {
+            businessManager.showLiveNotification(
+                'Validation Error',
+                error.message,
+                'error',
+                'fa-exclamation-circle'
+            );
+        } else {
+            alert(error.message); // Fallback
+        }
     }
 }
 
@@ -6362,6 +6678,260 @@ setTimeout(() => {
 }, 2000);
 
 // Global notification functions
+// Global test function for notifications
+function testNotifications() {
+    if (window.businessManager && window.businessManager.testNotifications) {
+        window.businessManager.testNotifications();
+    } else {
+        console.error('❌ Business manager not available');
+    }
+}
+
+// Global function to show custom notification
+function showTestNotification(title, message, type = 'info') {
+    if (window.businessManager && window.businessManager.showLiveNotification) {
+        window.businessManager.showLiveNotification(title, message, type);
+    } else {
+        console.error('❌ Business manager not available');
+    }
+}
+
+// Debug function to force show dropdown
+function debugShowNotificationDropdown() {
+    const dropdown = document.getElementById('notificationDropdown');
+    if (dropdown) {
+        dropdown.style.display = 'block';
+        dropdown.style.visibility = 'visible';
+        dropdown.style.opacity = '1';
+        dropdown.style.zIndex = '99999';
+        dropdown.classList.add('show');
+        console.log('🔔 Debug: Dropdown forced to show');
+        
+        // Load notifications
+        if (window.businessManager && window.businessManager.loadNotifications) {
+            window.businessManager.loadNotifications();
+        }
+    } else {
+        console.error('❌ Dropdown not found');
+    }
+}
+
+// Debug function to add test data for notifications
+function addTestDataForNotifications() {
+    // Add some test products with low stock
+    const testProducts = [
+        {
+            id: 'test1',
+            name: 'iPhone 15 Pro',
+            stock_quantity: 2,
+            reorderLevel: 5,
+            price: 4500,
+            created_at: new Date().toISOString()
+        },
+        {
+            id: 'test2', 
+            name: 'Samsung Galaxy S24',
+            stock_quantity: 1,
+            reorderLevel: 3,
+            price: 3200,
+            created_at: new Date().toISOString()
+        },
+        {
+            id: 'test3',
+            name: 'MacBook Pro M3',
+            stock_quantity: 0,
+            reorderLevel: 2,
+            price: 8500,
+            created_at: new Date().toISOString()
+        }
+    ];
+    
+    // Store in localStorage
+    const existingProducts = JSON.parse(localStorage.getItem('jmonic_products') || '[]');
+    const updatedProducts = [...existingProducts, ...testProducts];
+    localStorage.setItem('jmonic_products', JSON.stringify(updatedProducts));
+    
+    // Add a recent sale
+    const testSale = {
+        id: 'sale_test1',
+        customer_name: 'John Doe',
+        total_amount: 1500,
+        paymentMethod: 'cash',
+        date: new Date().toISOString(),
+        products: [
+            { name: 'Phone Case', quantity: 2, subtotal: 100 },
+            { name: 'Screen Protector', quantity: 3, subtotal: 75 }
+        ]
+    };
+    
+    const existingSales = JSON.parse(localStorage.getItem('jmonic_sales') || '[]');
+    existingSales.push(testSale);
+    localStorage.setItem('jmonic_sales', JSON.stringify(existingSales));
+    
+    console.log('✅ Test data added for notifications');
+    
+    // Refresh notifications
+    if (window.businessManager && window.businessManager.loadNotifications) {
+        window.businessManager.loadNotifications();
+    }
+    
+    return { products: testProducts, sale: testSale };
+}
+
+// Test SKU-Product Name validation
+function testSKUProductValidation() {
+    console.log('🧪 Testing SKU-Product Name validation...');
+    
+    if (!window.businessManager) {
+        console.error('❌ Business manager not available');
+        return;
+    }
+    
+    // First, add a product
+    const product1 = {
+        sku: 'VALID-001',
+        productName: 'Original Product',
+        description: 'First product',
+        sellingPrice: '50',
+        costPrice: '30',
+        stockQuantity: '10',
+        reorderLevel: '5'
+    };
+    
+    try {
+        console.log('Adding initial product...');
+        window.businessManager.handleProductsAPI('POST', product1);
+        console.log('✅ Initial product added successfully');
+        
+        // Now try to add with same SKU but different name (should fail)
+        const product2 = {
+            sku: 'VALID-001', // Same SKU
+            productName: 'Different Product Name', // Different name
+            description: 'This should fail',
+            sellingPrice: '60',
+            costPrice: '40',
+            stockQuantity: '5',
+            reorderLevel: '3'
+        };
+        
+        console.log('Trying to add with same SKU but different name...');
+        window.businessManager.handleProductsAPI('POST', product2);
+        console.log('❌ This should not succeed!');
+        
+    } catch (error) {
+        console.log('✅ Validation working correctly:', error.message);
+    }
+    
+    // Test: Same product name with different SKU (should also fail)
+    try {
+        const product3 = {
+            sku: 'DIFFERENT-002', // Different SKU
+            productName: 'Original Product', // Same name as first product
+            description: 'This should also fail',
+            sellingPrice: '70',
+            costPrice: '50',
+            stockQuantity: '8',
+            reorderLevel: '4'
+        };
+        
+        console.log('Trying to add with same name but different SKU...');
+        window.businessManager.handleProductsAPI('POST', product3);
+        console.log('❌ This should not succeed either!');
+        
+    } catch (error) {
+        console.log('✅ Name validation also working:', error.message);
+    }
+    
+    // Test: Correct way - same SKU and same name (should succeed)
+    try {
+        const product4 = {
+            sku: 'VALID-001', // Same SKU
+            productName: 'Original Product', // Same name
+            description: 'Adding more stock',
+            sellingPrice: '50',
+            costPrice: '30',
+            stockQuantity: '15', // Additional stock
+            reorderLevel: '5'
+        };
+        
+        console.log('Adding more stock with matching SKU and name...');
+        window.businessManager.handleProductsAPI('POST', product4);
+        console.log('✅ Stock addition successful!');
+        
+    } catch (error) {
+        console.log('❌ This should have worked:', error.message);
+    }
+}
+
+// Quick test function to verify add product works
+function testAddProductFunctionality() {
+    console.log('🧪 Testing Add Product functionality...');
+    
+    if (window.businessManager) {
+        const testProduct = {
+            sku: 'TEST-001',
+            productName: 'Test Product',
+            description: 'This is a test product',
+            sellingPrice: '50',
+            costPrice: '30',
+            stockQuantity: '10',
+            reorderLevel: '5'
+        };
+        
+        try {
+            const result = window.businessManager.handleProductsAPI('POST', testProduct);
+            console.log('✅ Add product test successful:', result);
+        } catch (error) {
+            console.error('❌ Add product test failed:', error);
+        }
+    } else {
+        console.error('❌ Business manager not available');
+    }
+}
+
+// Test function to simulate adding stock with same SKU
+function testSameSKUStock() {
+    console.log('🧪 Testing same SKU stock addition...');
+    
+    // Add initial product
+    const productData1 = {
+        sku: 'TEST-SKU-001',
+        productName: 'Test Product',
+        description: 'Initial test product',
+        sellingPrice: '100',
+        costPrice: '50',
+        stockQuantity: '5',
+        reorderLevel: '10'
+    };
+    
+    // Add more stock with same SKU
+    const productData2 = {
+        sku: 'TEST-SKU-001', // Same SKU
+        productName: 'Test Product', 
+        description: 'Adding more stock',
+        sellingPrice: '100',
+        costPrice: '50',
+        stockQuantity: '15', // Adding 15 more units
+        reorderLevel: '10'
+    };
+    
+    if (window.businessManager) {
+        console.log('Adding initial product...');
+        window.businessManager.handleProductsAPI('POST', productData1);
+        
+        setTimeout(() => {
+            console.log('Adding more stock to same SKU...');
+            window.businessManager.handleProductsAPI('POST', productData2);
+            
+            // Refresh notifications
+            setTimeout(() => {
+                window.businessManager.loadNotifications();
+                console.log('✅ Test completed. Check product should now have 20 units total.');
+            }, 500);
+        }, 1000);
+    }
+}
+
 function toggleNotificationDropdown() {
     if (window.businessManager) {
         window.businessManager.toggleNotificationDropdown();
@@ -6386,4 +6956,129 @@ function showLiveNotification(title, message, type = 'info', icon = 'fa-info-cir
         window.businessManager.showLiveNotification(title, message, type, icon);
     }
 }
+
+// Test notification function
+function testNotificationSystem() {
+    console.log('🧪 Testing notification system...');
+    
+    // Add sample product with low stock for testing
+    const testProducts = [
+        {
+            id: 'test-1',
+            name: 'Test Product Low Stock',
+            stock_quantity: 2,
+            reorderLevel: 10,
+            min_stock_level: 5
+        }
+    ];
+    
+    localStorage.setItem('jmonic_products', JSON.stringify(testProducts));
+    console.log('📦 Added test product with low stock');
+    
+    // Test live notification
+    showLiveNotification('Test Alert', 'This is a test notification', 'success', 'fa-check-circle');
+    
+    // Test badge update
+    const badge = document.getElementById('headerNotificationBadge');
+    if (badge) {
+        badge.textContent = '1';
+        badge.style.display = 'block';
+        console.log('✅ Badge updated');
+    }
+    
+    // Test dropdown visibility
+    const dropdown = document.getElementById('notificationDropdown');
+    if (dropdown) {
+        console.log('✅ Dropdown element found');
+        console.log('📊 Dropdown current display:', dropdown.style.display);
+    } else {
+        console.error('❌ Dropdown element not found');
+    }
+    
+    // Load notifications
+    if (window.businessManager) {
+        window.businessManager.loadNotifications();
+        console.log('✅ Notifications loaded');
+    }
+    
+    console.log('🧪 Test complete - check the notification bell!');
+}
+
+// Function to clear test data and restore clean dashboard  
+function clearTestData() {
+    console.log('🧹 Clearing test data...');
+    localStorage.removeItem('jmonic_products');
+    localStorage.removeItem('jmonic_sales');
+    localStorage.removeItem('inventoryTransactions');
+    
+    // Hide notification badge
+    const badge = document.getElementById('headerNotificationBadge');
+    if (badge) {
+        badge.style.display = 'none';
+    }
+    
+    // Reload notifications to clear them
+    if (window.businessManager) {
+        window.businessManager.loadNotifications();
+    }
+    
+    console.log('✅ Test data cleared - dashboard should be clean now!');
+}
+
+// Comprehensive diagnostic function
+function diagnoseNotificationSystem() {
+    console.log('🔍 COMPREHENSIVE NOTIFICATION SYSTEM DIAGNOSIS');
+    console.log('================================================');
+    
+    // Check elements
+    const bell = document.getElementById('notificationBell');
+    const dropdown = document.getElementById('notificationDropdown');
+    const badge = document.getElementById('headerNotificationBadge');
+    const notificationList = document.getElementById('notificationList');
+    
+    console.log('📋 Element Check:');
+    console.log('  - Bell:', !!bell, bell);
+    console.log('  - Dropdown:', !!dropdown, dropdown);
+    console.log('  - Badge:', !!badge, badge);
+    console.log('  - List:', !!notificationList, notificationList);
+    
+    // Check business manager
+    console.log('📋 BusinessManager Check:');
+    console.log('  - Exists:', !!window.businessManager);
+    console.log('  - Has toggleNotificationDropdown:', !!(window.businessManager && window.businessManager.toggleNotificationDropdown));
+    console.log('  - Has loadNotifications:', !!(window.businessManager && window.businessManager.loadNotifications));
+    
+    // Check data
+    const products = JSON.parse(localStorage.getItem('jmonic_products') || '[]');
+    console.log('📋 Data Check:');
+    console.log('  - Products:', products.length, products);
+    
+    // Test dropdown manually
+    if (dropdown) {
+        console.log('📋 Manual Dropdown Test:');
+        console.log('  - Current display:', dropdown.style.display);
+        dropdown.style.display = dropdown.style.display === 'none' ? 'block' : 'none';
+        console.log('  - New display:', dropdown.style.display);
+    }
+    
+    // Test notification bell click handler
+    if (bell) {
+        console.log('📋 Bell Click Test:');
+        console.log('  - onclick attribute:', bell.getAttribute('onclick'));
+        console.log('  - Attempting manual click...');
+        try {
+            bell.click();
+            console.log('  - ✅ Manual click successful');
+        } catch (error) {
+            console.log('  - ❌ Manual click failed:', error);
+        }
+    }
+    
+    console.log('================================================');
+}
+
+// Add test function to window for browser console access
+window.testNotificationSystem = testNotificationSystem;
+window.diagnoseNotificationSystem = diagnoseNotificationSystem;
+window.clearTestData = clearTestData;
 
