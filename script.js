@@ -2532,11 +2532,11 @@ class NaturalHairBusinessManager {
         const currencySelector = document.getElementById('currencySelector');
         const currencySelectorDash = document.getElementById('currencySelector-dash');
         const languageSelector = document.getElementById('languageSelector');
-        const lowStockLevel = document.getElementById('lowStockLevel');
-        const enableAnalytics = document.getElementById('enableAnalytics');
-        const lowStockAlerts = document.getElementById('lowStockAlerts');
-        const salesNotifications = document.getElementById('salesNotifications');
-        const autoBackup = document.getElementById('autoBackup');
+        const lowStockLevel = document.getElementById('lowStockLevel') || document.getElementById('lowStockLevel-dash');
+        const enableAnalytics = document.getElementById('enableAnalytics') || document.getElementById('enableAnalytics-dash');
+        const lowStockAlerts = document.getElementById('lowStockAlerts') || document.getElementById('lowStockAlerts-dash');
+        const salesNotifications = document.getElementById('salesNotifications') || document.getElementById('salesNotifications-dash');
+        const autoBackup = document.getElementById('autoBackup') || document.getElementById('autoBackup-dash');
         
         if (currencySelector) currencySelector.value = settings.currency || 'GHS';
         if (currencySelectorDash) currencySelectorDash.value = settings.currency || 'GHS';
@@ -2567,11 +2567,11 @@ class NaturalHairBusinessManager {
             theme: themeRadio?.value || 'light',
             currency: currency,
             language: document.getElementById('languageSelector')?.value || 'en',
-            lowStockLevel: parseInt(document.getElementById('lowStockLevel')?.value) || 5,
-            enableAnalytics: document.getElementById('enableAnalytics')?.checked !== false,
-            lowStockAlerts: document.getElementById('lowStockAlerts')?.checked !== false,
-            salesNotifications: document.getElementById('salesNotifications')?.checked !== false,
-            autoBackup: document.getElementById('autoBackup')?.checked !== false
+            lowStockLevel: parseInt(document.getElementById('lowStockLevel')?.value || document.getElementById('lowStockLevel-dash')?.value) || 5,
+            enableAnalytics: (document.getElementById('enableAnalytics')?.checked || document.getElementById('enableAnalytics-dash')?.checked) !== false,
+            lowStockAlerts: (document.getElementById('lowStockAlerts')?.checked || document.getElementById('lowStockAlerts-dash')?.checked) !== false,
+            salesNotifications: (document.getElementById('salesNotifications')?.checked || document.getElementById('salesNotifications-dash')?.checked) !== false,
+            autoBackup: (document.getElementById('autoBackup')?.checked || document.getElementById('autoBackup-dash')?.checked) !== false
         };
         
         localStorage.setItem('jmonic_settings', JSON.stringify(settings));
@@ -4647,6 +4647,11 @@ function showSection(sectionName) {
     } else if (sectionName === 'reports' && businessManager) {
         // Update inventory reports when reports section is viewed
         businessManager.updateInventoryReports();
+    } else if (sectionName === 'settings' && businessManager) {
+        // Initialize settings when settings section is opened
+        console.log('Settings section opened - loading settings');
+        businessManager.loadSettings();
+        businessManager.initializeSettingsTabs();
     }
     
     // Update header title and subtitle
