@@ -4105,15 +4105,56 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Cache buster - Force reload of cached content
     console.log('🔄 J\'MONIC Dashboard loaded - Version:', new Date().toISOString());
+    console.log('🧹 Quick Actions and Settings removed from header');
     
-    // Remove any lingering debug panels from cache
+    // Force remove any cached elements
     setTimeout(() => {
         const debugPanel = document.getElementById('debug-panel');
         if (debugPanel) {
             debugPanel.remove();
             console.log('🧹 Removed cached debug panel');
         }
-    }, 100);
+        
+        // Force remove quick actions button if it exists
+        const quickActionsBtn = document.getElementById('quickActionsBtn');
+        if (quickActionsBtn) {
+            quickActionsBtn.style.display = 'none';
+            console.log('🧹 Hidden cached quick actions button');
+        }
+        
+        // Force remove settings button functionality  
+        const settingsBtn = document.getElementById('settingsBtn');
+        if (settingsBtn) {
+            settingsBtn.style.display = 'none';
+            console.log('🧹 Hidden cached settings button');
+        }
+        
+        // Add visual indicator of update
+        const header = document.querySelector('.header-actions');
+        if (header) {
+            const indicator = document.createElement('div');
+            indicator.style.cssText = `
+                position: fixed;
+                top: 10px;
+                right: 10px;
+                background: #10b981;
+                color: white;
+                padding: 8px 12px;
+                border-radius: 4px;
+                font-size: 12px;
+                z-index: 10000;
+                opacity: 0.9;
+            `;
+            indicator.textContent = '✅ Updated - Quick Actions & Settings Removed';
+            document.body.appendChild(indicator);
+            
+            setTimeout(() => {
+                if (indicator.parentNode) {
+                    indicator.remove();
+                }
+            }, 5000);
+        }
+    }, 500);
     
     // Ensure clearAllData is ALWAYS available globally
     window.clearAllData = window.clearAllData || function() {
