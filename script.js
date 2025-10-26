@@ -33,6 +33,9 @@ class NaturalHairBusinessManager {
             console.warn('❌ API Connection failed:', error.message);
             console.warn('System will work in offline mode.');
             this.showInitialHelpMessage();
+            
+            // Add sample data if no data exists
+            this.initializeSampleData();
         }
     }
     
@@ -70,6 +73,98 @@ class NaturalHairBusinessManager {
                 </div>
             `;
         }
+    }
+    
+    initializeSampleData() {
+        // Check if data already exists
+        const existingProducts = JSON.parse(localStorage.getItem('jmonic_products') || '[]');
+        const existingSales = JSON.parse(localStorage.getItem('jmonic_sales') || '[]');
+        
+        if (existingProducts.length === 0) {
+            // Add sample products
+            const sampleProducts = [
+                {
+                    id: 1,
+                    name: "Obasima Hair Cream",
+                    sku: "OHC001",
+                    stock_quantity: 25,
+                    selling_price: 45.00,
+                    cost_price: 30.00,
+                    reorder_level: 10,
+                    description: "Premium natural hair cream for moisturizing and styling"
+                },
+                {
+                    id: 2,
+                    name: "Natural Shampoo",
+                    sku: "NS002",
+                    stock_quantity: 15,
+                    selling_price: 35.00,
+                    cost_price: 20.00,
+                    reorder_level: 5,
+                    description: "Organic sulfate-free shampoo for all hair types"
+                },
+                {
+                    id: 3,
+                    name: "Hair Oil Treatment",
+                    sku: "HOT003",
+                    stock_quantity: 2,
+                    selling_price: 55.00,
+                    cost_price: 35.00,
+                    reorder_level: 5,
+                    description: "Deep conditioning oil treatment for damaged hair"
+                }
+            ];
+            
+            localStorage.setItem('jmonic_products', JSON.stringify(sampleProducts));
+            console.log('✅ Sample products added');
+        }
+        
+        if (existingSales.length === 0) {
+            // Add sample sales with different payment methods
+            const sampleSales = [
+                {
+                    id: 1,
+                    date: new Date().toISOString().split('T')[0],
+                    payment_method: 'cash',
+                    paymentMethod: 'cash',
+                    total_amount: 90.00,
+                    revenue: 90.00,
+                    products: [
+                        { id: 1, name: "Obasima Hair Cream", price: 45.00, quantity: 2, subtotal: 90.00 }
+                    ]
+                },
+                {
+                    id: 2,
+                    date: new Date().toISOString().split('T')[0],
+                    payment_method: 'mobile_money',
+                    paymentMethod: 'mobile_money',
+                    total_amount: 35.00,
+                    revenue: 35.00,
+                    products: [
+                        { id: 2, name: "Natural Shampoo", price: 35.00, quantity: 1, subtotal: 35.00 }
+                    ]
+                },
+                {
+                    id: 3,
+                    date: new Date().toISOString().split('T')[0],
+                    payment_method: 'transfer',
+                    paymentMethod: 'transfer',
+                    total_amount: 55.00,
+                    revenue: 55.00,
+                    products: [
+                        { id: 3, name: "Hair Oil Treatment", price: 55.00, quantity: 1, subtotal: 55.00 }
+                    ]
+                }
+            ];
+            
+            localStorage.setItem('jmonic_sales', JSON.stringify(sampleSales));
+            console.log('✅ Sample sales added');
+        }
+        
+        // Reload dashboard with sample data
+        setTimeout(() => {
+            this.loadDashboardData();
+        }, 100);
     }
 
     // API Methods
