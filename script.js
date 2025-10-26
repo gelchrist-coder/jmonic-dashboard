@@ -1112,7 +1112,6 @@ class NaturalHairBusinessManager {
         const todayOrdersEl = document.getElementById('todayOrders');
         const avgOrderValueEl = document.getElementById('avgOrderValue');
         const totalStockOutEl = document.getElementById('totalStockOut');
-        const totalStockInEl = document.getElementById('totalStockIn');
         
         if (todayRevenueEl) todayRevenueEl.textContent = `GHS ${(stats.today_sales || 0).toFixed(2)}`;
         // Stock cards now on dashboard - will be calculated below
@@ -1177,7 +1176,6 @@ class NaturalHairBusinessManager {
 
         // Calculate total stock movements (all time)
         let totalStockOut = 0;
-        let totalStockIn = 0;
         
         // Count all sales quantities (stock out)
         sales.forEach(sale => {
@@ -1188,34 +1186,10 @@ class NaturalHairBusinessManager {
             }
         });
         
-        // Count all inventory transactions (stock in)
-        const transactions = JSON.parse(localStorage.getItem('inventoryTransactions') || '[]');
-        transactions.forEach(transaction => {
-            if (transaction.type === 'purchase' || transaction.type === 'adjustment') {
-                if (transaction.quantity > 0) {
-                    totalStockIn += parseInt(transaction.quantity) || 0;
-                }
-            }
-        });
-        
-        // Also count initial stock from products as stock in
-        products.forEach(product => {
-            if (product.created_at) {
-                // Only count initial stock for products created (not updated)
-                const hasInitialStock = !transactions.some(t => 
-                    t.product_id == product.id && t.reference === 'Initial stock entry'
-                );
-                if (hasInitialStock && product.stock_quantity > 0) {
-                    totalStockIn += parseInt(product.stock_quantity) || 0;
-                }
-            }
-        });
-        
         // Update stock display elements
         if (totalStockOutEl) totalStockOutEl.textContent = totalStockOut.toLocaleString();
-        if (totalStockInEl) totalStockInEl.textContent = totalStockIn.toLocaleString();
         
-        console.log('Stock calculations:', { totalStockOut, totalStockIn, salesCount: sales.length, transactionsCount: transactions.length });
+        console.log('Stock calculations:', { totalStockOut, salesCount: sales.length });
     }
     
     // Sales Dashboard Methods
