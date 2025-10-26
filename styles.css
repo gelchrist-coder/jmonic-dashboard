@@ -6929,3 +6929,146 @@ body {
 .theme-dark .setup-info p {
     color: var(--text-secondary);
 }
+
+/* Payment Method Breakdown Styles */
+.payment-breakdown-section {
+    margin: 2rem 0;
+    padding: 1.5rem;
+    background: var(--card-bg);
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow);
+}
+
+.payment-breakdown-section .section-title {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.payment-breakdown-section .section-title i {
+    color: var(--primary-color);
+    font-size: 1.125rem;
+}
+
+.payment-methods-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.5rem;
+}
+
+.payment-stat-card {
+    background: var(--background-color);
+    border-radius: var(--border-radius);
+    padding: 1.5rem;
+    border: 1px solid var(--border-color);
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.payment-stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, var(--accent-color), var(--primary-color));
+}
+
+.payment-stat-card.cash::before {
+    background: linear-gradient(90deg, #10b981, #059669);
+}
+
+.payment-stat-card.mobile::before {
+    background: linear-gradient(90deg, #3b82f6, #1d4ed8);
+}
+
+.payment-stat-card.transfer::before {
+    background: linear-gradient(90deg, #8b5cf6, #7c3aed);
+}
+
+.payment-stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+}
+
+.payment-stat-card .payment-icon {
+    width: 50px;
+    height: 50px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 1rem;
+    font-size: 1.5rem;
+    color: white;
+}
+
+.payment-stat-card.cash .payment-icon {
+    background: linear-gradient(135deg, #10b981, #059669);
+}
+
+.payment-stat-card.mobile .payment-icon {
+    background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+}
+
+.payment-stat-card.transfer .payment-icon {
+    background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+}
+
+.payment-content h4 {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 0.5rem;
+}
+
+.payment-amount {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 0.5rem;
+    line-height: 1.2;
+}
+
+.payment-percentage {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+/* Responsive adjustments for payment breakdown */
+@media (max-width: 768px) {
+    .payment-methods-grid {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+    
+    .payment-breakdown-section {
+        margin: 1.5rem 0;
+        padding: 1.25rem;
+    }
+    
+    .payment-stat-card {
+        padding: 1.25rem;
+    }
+    
+    .payment-amount {
+        font-size: 1.5rem;
+    }
+}
+
+/* Dark theme adjustments for payment breakdown */
+.theme-dark .payment-stat-card {
+    background: var(--card-bg);
+    border-color: var(--border-color);
+}
+
+.theme-dark .payment-stat-card:hover {
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+}

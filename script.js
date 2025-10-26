@@ -1168,6 +1168,9 @@ class NaturalHairBusinessManager {
             // Update sales analytics
             this.updateSalesAnalytics(sales, products);
             
+            // Update payment method breakdown
+            this.updatePaymentBreakdown(sales);
+            
             // Initialize/update charts only if needed
             if (!this.salesChartsInitialized || this.shouldUpdateCharts) {
                 this.initializeSalesCharts();
@@ -1465,6 +1468,55 @@ class NaturalHairBusinessManager {
             editBtn.style.display = 'block';
             actionsDiv.style.display = 'none';
         });
+    }
+    
+    // Payment Method Breakdown
+    updatePaymentBreakdown(sales) {
+        // Calculate payment method totals
+        const paymentTotals = {
+            cash: 0,
+            mobile_money: 0,
+            transfer: 0
+        };
+        
+        // Sum up sales by payment method
+        sales.forEach(sale => {
+            const paymentMethod = sale.payment_method || sale.paymentMethod || 'cash';
+            const amount = parseFloat(sale.total_amount || sale.revenue || 0);
+            
+            // Normalize payment method names
+            if (paymentMethod === 'cash') {
+                paymentTotals.cash += amount;
+            } else if (paymentMethod === 'mobile_money') {
+                paymentTotals.mobile_money += amount;
+            } else if (paymentMethod === 'transfer') {
+                paymentTotals.transfer += amount;
+            }
+        });
+        
+        // Calculate total and percentages
+        const totalRevenue = paymentTotals.cash + paymentTotals.mobile_money + paymentTotals.transfer;
+        
+        const cashPercentage = totalRevenue > 0 ? (paymentTotals.cash / totalRevenue) * 100 : 0;
+        const mobilePercentage = totalRevenue > 0 ? (paymentTotals.mobile_money / totalRevenue) * 100 : 0;
+        const transferPercentage = totalRevenue > 0 ? (paymentTotals.transfer / totalRevenue) * 100 : 0;
+        
+        // Update the UI elements
+        const cashTotalElement = document.getElementById('cashTotal');
+        const mobileTotalElement = document.getElementById('mobileTotal');
+        const transferTotalElement = document.getElementById('transferTotal');
+        
+        const cashPercentageElement = document.getElementById('cashPercentage');
+        const mobilePercentageElement = document.getElementById('mobilePercentage');
+        const transferPercentageElement = document.getElementById('transferPercentage');
+        
+        if (cashTotalElement) cashTotalElement.textContent = `GHS ${paymentTotals.cash.toFixed(2)}`;
+        if (mobileTotalElement) mobileTotalElement.textContent = `GHS ${paymentTotals.mobile_money.toFixed(2)}`;
+        if (transferTotalElement) transferTotalElement.textContent = `GHS ${paymentTotals.transfer.toFixed(2)}`;
+        
+        if (cashPercentageElement) cashPercentageElement.textContent = `${cashPercentage.toFixed(1)}% of total`;
+        if (mobilePercentageElement) mobilePercentageElement.textContent = `${mobilePercentage.toFixed(1)}% of total`;
+        if (transferPercentageElement) transferPercentageElement.textContent = `${transferPercentage.toFixed(1)}% of total`;
     }
     
     // Charts initialization and updates
@@ -2092,18 +2144,6 @@ class NaturalHairBusinessManager {
             this.initializeDeleteButtons();
         }, 1000);
         
-        // Add event delegation for delete buttons
-        document.addEventListener('click', (e) => {
-            if (e.target.id === 'deleteDataBtn' || e.target.id === 'deleteDataBtn-dash' || 
-                (e.target.textContent && e.target.textContent.includes('Clear All Data'))) {
-                e.preventDefault();
-                e.stopPropagation();
-                console.log('🗑️ Delete button clicked via delegation');
-                this.clearAllData();
-                this.closeAllDropdowns();
-            }
-        });
-        
         // Activate settings dropdown functionality immediately
         console.log('✅ Settings functionality activated');
     }
@@ -2203,47 +2243,22 @@ class NaturalHairBusinessManager {
         
         console.log(`📊 Delete button status: ${foundButtons}/${deleteButtonIds.length} buttons found`);
         
-        // Method 2: Class-based targeting with improved detection
-        const dangerButtons = document.querySelectorAll('.btn-danger-dashboard, .btn-danger, .btn-danger.modern');
-        let handledButtons = 0;
-        
-        dangerButtons.forEach((btn, index) => {
-            if (btn.textContent.includes('Clear') || btn.innerHTML.includes('trash') || btn.innerHTML.includes('Clear All Data')) {
-                handledButtons++;
-                // Remove existing listeners by cloning
-                const newBtn = btn.cloneNode(true);
-                btn.parentNode.replaceChild(newBtn, btn);
-                
-                newBtn.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    console.log('🗑️ Delete button clicked via class:', index, newBtn.textContent.trim());
-                    this.clearAllData();
-                });
-                
-                console.log('✅ Danger button initialized via class:', index, newBtn.textContent.trim());
-            }
-        });
-        
-        console.log(`📊 Class-based buttons: ${handledButtons}/${dangerButtons.length} danger buttons handled`);
+        console.log(`📊 Class-based buttons: Skipped overly broad class matching to prevent false triggers`);
     }
     
     setupDeleteButtonObserver() {
-        // Observer to catch dynamically added delete buttons
+        // Observer to catch dynamically added delete buttons (with specific targeting)
         const observer = new MutationObserver((mutations) => {
             mutations.forEach((mutation) => {
                 mutation.addedNodes.forEach((node) => {
                     if (node.nodeType === 1) {
-                        // Check if the added node is a delete button
-                        if (node.id === 'deleteDataBtn' || node.id === 'deleteDataBtn-dash' ||
-                            node.classList.contains('btn-danger-dashboard') ||
-                            (node.textContent && node.textContent.includes('Clear All Data'))) {
-                            
+                        // Only check for specific delete button IDs (not text content)
+                        if (node.id === 'deleteDataBtn' || node.id === 'deleteDataBtn-dash') {
                             this.attachDeleteHandler(node);
                         }
                         
-                        // Check for delete buttons within the added node
-                        const deleteButtons = node.querySelectorAll('#deleteDataBtn, #deleteDataBtn-dash, .btn-danger-dashboard, .btn-danger');
+                        // Check for delete buttons within the added node (specific IDs only)
+                        const deleteButtons = node.querySelectorAll('#deleteDataBtn, #deleteDataBtn-dash');
                         deleteButtons.forEach(btn => this.attachDeleteHandler(btn));
                     }
                 });
@@ -2255,21 +2270,8 @@ class NaturalHairBusinessManager {
     }
     
     setupGlobalDeleteHandler() {
-        // Global event delegation as ultimate fallback
-        document.addEventListener('click', (e) => {
-            const target = e.target.closest('button');
-            if (target && (
-                target.id === 'deleteDataBtn' || 
-                target.id === 'deleteDataBtn-dash' ||
-                target.classList.contains('btn-danger-dashboard') ||
-                (target.textContent && target.textContent.includes('Clear All Data'))
-            )) {
-                e.preventDefault();
-                e.stopPropagation();
-                console.log('🗑️ Delete button clicked via global delegation');
-                this.clearAllData();
-            }
-        }, true); // Use capture phase
+        // Disabled overly broad global event delegation to prevent false triggers
+        console.log('� Global delete handler disabled to prevent modal popup bugs');
     }
     
     attachDeleteHandler(btn) {
