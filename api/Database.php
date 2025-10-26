@@ -6,7 +6,7 @@
  * for the natural hair business management system.
  */
 
-require_once 'config.php';
+require_once 'config_sqlite.php';
 
 class Database {
     private $pdo;

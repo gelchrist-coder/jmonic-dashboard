@@ -1755,6 +1755,54 @@
         </div>
     </nav>
 
+    <!-- Business Setup Modal -->
+    <div id="businessSetupModal" class="modal" style="display: none;">
+        <div class="modal-content setup-modal">
+            <div class="modal-header">
+                <h3><i class="fas fa-store"></i> Welcome to J'MONIC ENTERPRISE</h3>
+                <p class="setup-subtitle">Let's set up your business information to get started</p>
+            </div>
+            <form id="businessSetupForm" class="modal-form">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Business Name *</label>
+                        <input type="text" id="setupBusinessName" required placeholder="Enter your business name" value="J'MONIC ENTERPRISE">
+                    </div>
+                    <div class="form-group">
+                        <label>Owner/Manager Name *</label>
+                        <input type="text" id="setupOwnerName" required placeholder="Enter your full name">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Contact Email</label>
+                        <input type="email" id="setupBusinessEmail" placeholder="contact@jmonic.com">
+                    </div>
+                    <div class="form-group">
+                        <label>Phone Number</label>
+                        <input type="tel" id="setupBusinessPhone" placeholder="+233 XX XXX XXXX">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Business Address</label>
+                    <textarea id="setupBusinessAddress" rows="3" placeholder="Enter your business address"></textarea>
+                </div>
+                <div class="setup-info">
+                    <i class="fas fa-info-circle"></i>
+                    <p>This information will be used throughout your dashboard and can be changed later in Settings.</p>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn-secondary" onclick="businessManager.skipBusinessSetup()">
+                        <i class="fas fa-forward"></i> Skip for Now
+                    </button>
+                    <button type="submit" class="btn-primary">
+                        <i class="fas fa-save"></i> Save & Continue
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <script src="script.js"></script>
 </body>
 </html>

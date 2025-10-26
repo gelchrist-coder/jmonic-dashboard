@@ -17,6 +17,9 @@ class NaturalHairBusinessManager {
         this.loadSettings();
         this.initializeHeaderDropdowns();
         
+        // Check if this is the first time setup
+        this.checkFirstTimeSetup();
+        
         // First test the connection
         try {
             console.log('Testing API connection...');
@@ -2962,6 +2965,128 @@ class NaturalHairBusinessManager {
             } else {
                 mobileUserInfo.textContent = 'Business Owner';
             }
+        }
+    }
+    
+    // Business Setup Methods
+    checkFirstTimeSetup() {
+        const settings = localStorage.getItem('jmonic_settings');
+        const businessSetupCompleted = localStorage.getItem('jmonic_business_setup_completed');
+        
+        // Show setup modal if this is the first time or if setup was never completed
+        if (!businessSetupCompleted) {
+            setTimeout(() => {
+                this.showBusinessSetupModal();
+            }, 1000); // Delay to allow page to load fully
+        }
+    }
+    
+    showBusinessSetupModal() {
+        const modal = document.getElementById('businessSetupModal');
+        if (modal) {
+            modal.style.display = 'flex';
+            
+            // Focus on the first input
+            const firstInput = modal.querySelector('#setupOwnerName');
+            if (firstInput) {
+                setTimeout(() => firstInput.focus(), 300);
+            }
+            
+            // Setup form submission
+            const form = document.getElementById('businessSetupForm');
+            if (form) {
+                form.onsubmit = (e) => {
+                    e.preventDefault();
+                    this.saveBusinessSetup();
+                };
+            }
+        }
+    }
+    
+    saveBusinessSetup() {
+        const businessName = document.getElementById('setupBusinessName').value.trim();
+        const ownerName = document.getElementById('setupOwnerName').value.trim();
+        const businessEmail = document.getElementById('setupBusinessEmail').value.trim();
+        const businessPhone = document.getElementById('setupBusinessPhone').value.trim();
+        const businessAddress = document.getElementById('setupBusinessAddress').value.trim();
+        
+        // Validate required fields
+        if (!businessName || !ownerName) {
+            this.showNotification('Please fill in the business name and owner name.', 'warning');
+            return;
+        }
+        
+        // Get current settings or create defaults
+        const currentSettings = JSON.parse(localStorage.getItem('jmonic_settings')) || {
+            theme: 'light',
+            currency: 'GHS',
+            language: 'en',
+            timezone: 'Africa/Accra',
+            lowStockLevel: 5,
+            enableAnalytics: true,
+            lowStockAlerts: true,
+            salesNotifications: true,
+            autoBackup: true
+        };
+        
+        // Update with business information
+        currentSettings.businessName = businessName;
+        currentSettings.ownerName = ownerName;
+        currentSettings.businessEmail = businessEmail;
+        currentSettings.businessPhone = businessPhone;
+        currentSettings.businessAddress = businessAddress;
+        
+        // Save settings
+        localStorage.setItem('jmonic_settings', JSON.stringify(currentSettings));
+        localStorage.setItem('jmonic_business_setup_completed', 'true');
+        
+        // Apply the settings
+        this.applySettings(currentSettings);
+        
+        // Update business information in settings page
+        this.populateSettingsForm(currentSettings);
+        
+        // Update headers
+        this.updateBusinessNameInHeader(businessName);
+        this.updateOwnerNameInHeader(ownerName);
+        
+        // Close modal
+        this.hideBusinessSetupModal();
+        
+        // Show success notification
+        this.showNotification(`Welcome ${ownerName}! Your business setup is complete.`, 'success');
+    }
+    
+    skipBusinessSetup() {
+        // Mark setup as completed but use defaults
+        localStorage.setItem('jmonic_business_setup_completed', 'true');
+        this.hideBusinessSetupModal();
+        this.showNotification('Setup skipped. You can configure business information later in Settings.', 'info');
+    }
+    
+    hideBusinessSetupModal() {
+        const modal = document.getElementById('businessSetupModal');
+        if (modal) {
+            modal.style.display = 'none';
+        }
+    }
+    
+    populateSettingsForm(settings) {
+        // Update the settings form with current values
+        if (document.getElementById('businessName')) {
+            document.getElementById('businessName').value = settings.businessName || 'J\'MONIC ENTERPRISE';
+        }
+        if (document.getElementById('ownerName')) {
+            document.getElementById('ownerName').value = settings.ownerName || 'Business Owner';
+        }
+        if (document.getElementById('businessEmail')) {
+            document.getElementById('businessEmail').value = settings.businessEmail || '';
+        }
+        if (document.getElementById('businessPhone')) {
+            document.getElementById('businessPhone').value = settings.businessPhone || '';
+        }
+        if (document.getElementById('businessAddress')) {
+            document.getElementById('businessAddress').value = settings.businessAddress || '';
         }
     }
     
@@ -6957,128 +7082,11 @@ function showLiveNotification(title, message, type = 'info', icon = 'fa-info-cir
     }
 }
 
-// Test notification function
-function testNotificationSystem() {
-    console.log('🧪 Testing notification system...');
-    
-    // Add sample product with low stock for testing
-    const testProducts = [
-        {
-            id: 'test-1',
-            name: 'Test Product Low Stock',
-            stock_quantity: 2,
-            reorderLevel: 10,
-            min_stock_level: 5
-        }
-    ];
-    
-    localStorage.setItem('jmonic_products', JSON.stringify(testProducts));
-    console.log('📦 Added test product with low stock');
-    
-    // Test live notification
-    showLiveNotification('Test Alert', 'This is a test notification', 'success', 'fa-check-circle');
-    
-    // Test badge update
-    const badge = document.getElementById('headerNotificationBadge');
-    if (badge) {
-        badge.textContent = '1';
-        badge.style.display = 'block';
-        console.log('✅ Badge updated');
-    }
-    
-    // Test dropdown visibility
-    const dropdown = document.getElementById('notificationDropdown');
-    if (dropdown) {
-        console.log('✅ Dropdown element found');
-        console.log('📊 Dropdown current display:', dropdown.style.display);
-    } else {
-        console.error('❌ Dropdown element not found');
-    }
-    
-    // Load notifications
-    if (window.businessManager) {
-        window.businessManager.loadNotifications();
-        console.log('✅ Notifications loaded');
-    }
-    
-    console.log('🧪 Test complete - check the notification bell!');
+// Test function to reset business setup (for demonstration)
+function resetBusinessSetup() {
+    localStorage.removeItem('jmonic_business_setup_completed');
+    location.reload();
 }
 
-// Function to clear test data and restore clean dashboard  
-function clearTestData() {
-    console.log('🧹 Clearing test data...');
-    localStorage.removeItem('jmonic_products');
-    localStorage.removeItem('jmonic_sales');
-    localStorage.removeItem('inventoryTransactions');
-    
-    // Hide notification badge
-    const badge = document.getElementById('headerNotificationBadge');
-    if (badge) {
-        badge.style.display = 'none';
-    }
-    
-    // Reload notifications to clear them
-    if (window.businessManager) {
-        window.businessManager.loadNotifications();
-    }
-    
-    console.log('✅ Test data cleared - dashboard should be clean now!');
-}
-
-// Comprehensive diagnostic function
-function diagnoseNotificationSystem() {
-    console.log('🔍 COMPREHENSIVE NOTIFICATION SYSTEM DIAGNOSIS');
-    console.log('================================================');
-    
-    // Check elements
-    const bell = document.getElementById('notificationBell');
-    const dropdown = document.getElementById('notificationDropdown');
-    const badge = document.getElementById('headerNotificationBadge');
-    const notificationList = document.getElementById('notificationList');
-    
-    console.log('📋 Element Check:');
-    console.log('  - Bell:', !!bell, bell);
-    console.log('  - Dropdown:', !!dropdown, dropdown);
-    console.log('  - Badge:', !!badge, badge);
-    console.log('  - List:', !!notificationList, notificationList);
-    
-    // Check business manager
-    console.log('📋 BusinessManager Check:');
-    console.log('  - Exists:', !!window.businessManager);
-    console.log('  - Has toggleNotificationDropdown:', !!(window.businessManager && window.businessManager.toggleNotificationDropdown));
-    console.log('  - Has loadNotifications:', !!(window.businessManager && window.businessManager.loadNotifications));
-    
-    // Check data
-    const products = JSON.parse(localStorage.getItem('jmonic_products') || '[]');
-    console.log('📋 Data Check:');
-    console.log('  - Products:', products.length, products);
-    
-    // Test dropdown manually
-    if (dropdown) {
-        console.log('📋 Manual Dropdown Test:');
-        console.log('  - Current display:', dropdown.style.display);
-        dropdown.style.display = dropdown.style.display === 'none' ? 'block' : 'none';
-        console.log('  - New display:', dropdown.style.display);
-    }
-    
-    // Test notification bell click handler
-    if (bell) {
-        console.log('📋 Bell Click Test:');
-        console.log('  - onclick attribute:', bell.getAttribute('onclick'));
-        console.log('  - Attempting manual click...');
-        try {
-            bell.click();
-            console.log('  - ✅ Manual click successful');
-        } catch (error) {
-            console.log('  - ❌ Manual click failed:', error);
-        }
-    }
-    
-    console.log('================================================');
-}
-
-// Add test function to window for browser console access
-window.testNotificationSystem = testNotificationSystem;
-window.diagnoseNotificationSystem = diagnoseNotificationSystem;
-window.clearTestData = clearTestData;
-
+// Make test function available in console
+window.resetBusinessSetup = resetBusinessSetup;

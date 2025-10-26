@@ -15,7 +15,7 @@ date_default_timezone_set('Africa/Accra');
 
 // Database Configuration - SQLite
 define('DB_TYPE', 'sqlite');
-define('DB_FILE', __DIR__ . '/../jmonic_enterprise.db');
+define('DB_FILE', __DIR__ . '/../../jmonic_enterprise.db');
 
 // API Configuration
 define('API_VERSION', '1.0');
