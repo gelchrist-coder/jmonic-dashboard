@@ -1093,18 +1093,13 @@ class NaturalHairBusinessManager {
             }
         });
         
-        // Count only stock from adding new products (Initial stock entry transactions)
-        const transactions = JSON.parse(localStorage.getItem('inventoryTransactions') || '[]');
+        // Count only current stock from products (not historical transactions)
+        // This gives the actual stock received that's currently available
+        const products = JSON.parse(localStorage.getItem('jmonic_products') || '[]');
         
-        // Filter to only "Initial stock entry" transactions (exclude sample transactions like PO-xxxx)
-        const initialStockTransactions = transactions.filter(t => 
-            t.reference === 'Initial stock entry' && 
-            t.quantity > 0 &&
-            !t.reference.startsWith('PO-') // Exclude sample purchase orders
-        );
-        
-        initialStockTransactions.forEach(transaction => {
-            totalStockIn += parseInt(transaction.quantity) || 0;
+        products.forEach(product => {
+            // Only count current stock quantity of each product
+            totalStockIn += parseInt(product.stock_quantity) || 0;
         });
         
         // Update stock display elements
@@ -4434,22 +4429,30 @@ class NaturalHairBusinessManager {
         const transactions = JSON.parse(localStorage.getItem('inventoryTransactions') || '[]');
         totalTransactions = transactions.length;
         
-        // Count stock in from transactions (only from adding new products)
-        const todayTransactions = transactions.filter(transaction => {
-            const transDate = new Date(transaction.timestamp);
-            transDate.setHours(0, 0, 0, 0);
-            return transDate.getTime() === today.getTime();
-        });
+        // Count stock in from products added today (net additions)
+        const products = JSON.parse(localStorage.getItem('jmonic_products') || '[]');
+        const todayDateString = today.toISOString().split('T')[0];
         
-        // Filter to only "Initial stock entry" transactions (exclude sample transactions)
-        const todayInitialStockTransactions = todayTransactions.filter(transaction =>
-            transaction.reference === 'Initial stock entry' && 
-            transaction.quantity > 0 &&
-            !transaction.reference.startsWith('PO-') // Exclude sample purchase orders
-        );
-        
-        todayInitialStockTransactions.forEach(transaction => {
-            stockInToday += parseInt(transaction.quantity) || 0;
+        products.forEach(product => {
+            // Check if product was created today
+            if (product.created_at) {
+                let productDateString;
+                try {
+                    if (product.created_at.includes('T')) {
+                        productDateString = product.created_at.split('T')[0];
+                    } else {
+                        const dateObj = new Date(product.created_at);
+                        productDateString = dateObj.toISOString().split('T')[0];
+                    }
+                    
+                    if (productDateString === todayDateString) {
+                        // Only count current stock of products added today
+                        stockInToday += parseInt(product.stock_quantity) || 0;
+                    }
+                } catch (e) {
+                    console.warn('Invalid product date:', product.created_at);
+                }
+            }
         });
         
         // Update UI elements
