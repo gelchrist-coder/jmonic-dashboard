@@ -1095,11 +1095,16 @@ class NaturalHairBusinessManager {
         
         // Count only stock from adding new products (Initial stock entry transactions)
         const transactions = JSON.parse(localStorage.getItem('inventoryTransactions') || '[]');
-        transactions.forEach(transaction => {
-            // Only count "Initial stock entry" transactions (when products are added)
-            if (transaction.reference === 'Initial stock entry' && transaction.quantity > 0) {
-                totalStockIn += parseInt(transaction.quantity) || 0;
-            }
+        
+        // Filter to only "Initial stock entry" transactions (exclude sample transactions like PO-xxxx)
+        const initialStockTransactions = transactions.filter(t => 
+            t.reference === 'Initial stock entry' && 
+            t.quantity > 0 &&
+            !t.reference.startsWith('PO-') // Exclude sample purchase orders
+        );
+        
+        initialStockTransactions.forEach(transaction => {
+            totalStockIn += parseInt(transaction.quantity) || 0;
         });
         
         // Update stock display elements
@@ -4436,11 +4441,15 @@ class NaturalHairBusinessManager {
             return transDate.getTime() === today.getTime();
         });
         
-        todayTransactions.forEach(transaction => {
-            // Only count "Initial stock entry" transactions (when products are added)
-            if (transaction.reference === 'Initial stock entry' && transaction.quantity > 0) {
-                stockInToday += parseInt(transaction.quantity) || 0;
-            }
+        // Filter to only "Initial stock entry" transactions (exclude sample transactions)
+        const todayInitialStockTransactions = todayTransactions.filter(transaction =>
+            transaction.reference === 'Initial stock entry' && 
+            transaction.quantity > 0 &&
+            !transaction.reference.startsWith('PO-') // Exclude sample purchase orders
+        );
+        
+        todayInitialStockTransactions.forEach(transaction => {
+            stockInToday += parseInt(transaction.quantity) || 0;
         });
         
         // Update UI elements
