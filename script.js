@@ -1093,26 +1093,12 @@ class NaturalHairBusinessManager {
             }
         });
         
-        // Count all inventory transactions (stock in)
+        // Count only stock from adding new products (Initial stock entry transactions)
         const transactions = JSON.parse(localStorage.getItem('inventoryTransactions') || '[]');
         transactions.forEach(transaction => {
-            if (transaction.type === 'purchase' || transaction.type === 'adjustment') {
-                if (transaction.quantity > 0) {
-                    totalStockIn += parseInt(transaction.quantity) || 0;
-                }
-            }
-        });
-        
-        // Also count initial stock from products as stock in
-        products.forEach(product => {
-            if (product.created_at) {
-                // Only count initial stock for products created (not updated)
-                const hasInitialStock = !transactions.some(t => 
-                    t.product_id == product.id && t.reference === 'Initial stock entry'
-                );
-                if (hasInitialStock && product.stock_quantity > 0) {
-                    totalStockIn += parseInt(product.stock_quantity) || 0;
-                }
+            // Only count "Initial stock entry" transactions (when products are added)
+            if (transaction.reference === 'Initial stock entry' && transaction.quantity > 0) {
+                totalStockIn += parseInt(transaction.quantity) || 0;
             }
         });
         
@@ -4443,7 +4429,7 @@ class NaturalHairBusinessManager {
         const transactions = JSON.parse(localStorage.getItem('inventoryTransactions') || '[]');
         totalTransactions = transactions.length;
         
-        // Count stock in from transactions (purchases, adjustments, etc.)
+        // Count stock in from transactions (only from adding new products)
         const todayTransactions = transactions.filter(transaction => {
             const transDate = new Date(transaction.timestamp);
             transDate.setHours(0, 0, 0, 0);
@@ -4451,10 +4437,9 @@ class NaturalHairBusinessManager {
         });
         
         todayTransactions.forEach(transaction => {
-            if (transaction.type === 'purchase' || transaction.type === 'adjustment') {
-                if (transaction.quantity > 0) {
-                    stockInToday += parseInt(transaction.quantity) || 0;
-                }
+            // Only count "Initial stock entry" transactions (when products are added)
+            if (transaction.reference === 'Initial stock entry' && transaction.quantity > 0) {
+                stockInToday += parseInt(transaction.quantity) || 0;
             }
         });
         
