@@ -2,15 +2,32 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>J'MONIC Enterprise - Redirecting...</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+    <meta name="description" content="GEL-STOCK - Professional inventory management system. Track products, sales, stock levels, and analytics with powerful offline support.">
+    <meta name="keywords" content="inventory management, stock tracking, sales management, business analytics, offline app, GEL-STOCK">
+    <meta name="theme-color" content="#3b82f6">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="GEL-STOCK">
+    <meta name="application-name" content="GEL-STOCK">
+    <meta name="msapplication-TileColor" content="#3b82f6">
+    <meta name="msapplication-config" content="browserconfig.xml">
+    
+    <title>GEL-STOCK - Professional Inventory Management</title>
+    
+    <link rel="manifest" href="dashboard/manifest.json">
+    <link rel="stylesheet" href="dashboard/styles.css">
+    <link href="dashboard/assets/css/fontawesome.min.css" rel="stylesheet">
+    <script src="dashboard/assets/js/chart.min.js"></script>
     <script>
-        // Redirect to dashboard
-        window.location.href = './dashboard/index.html';
+        // Redirect to dashboard folder
+        if (window.location.pathname === '/' || window.location.pathname.endsWith('.html')) {
+            window.location.href = './dashboard/index.html';
+        }
     </script>
 </head>
 <body>
-    <p>Redirecting to J'MONIC Enterprise Dashboard...</p>
-    <p>If you are not redirected automatically, <a href="./dashboard/index.html">click here</a>.</p>
+    <p>Loading J'MONIC Enterprise Dashboard...</p>
+    <p>If the page doesn't load, <a href="./dashboard/index.html">click here</a>.</p>
 </body>
 </html>
