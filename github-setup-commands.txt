@@ -1,0 +1,22 @@
+# GitHub Setup Commands for J'MONIC Dashboard
+# Run these commands in Terminal after creating your GitHub repository
+
+# Step 1: Navigate to your project folder
+cd "/Users/gelchristboateng/Documents/J'MONIC ENTERPRISE/public"
+
+# Step 2: Connect to your GitHub repository (replace YOUR_USERNAME with your GitHub username)
+git remote add origin https://github.com/YOUR_USERNAME/jmonic-dashboard.git
+
+# Step 3: Push your code to GitHub
+git push -u origin main
+
+# Step 4: After pushing, go to your GitHub repository settings and enable GitHub Pages:
+# Repository → Settings → Pages → Source: "Deploy from a branch" → Branch: "main" → Save
+
+# Your live URL will be: https://YOUR_USERNAME.github.io/jmonic-dashboard
+
+# Example:
+# If your GitHub username is "gelchrist123", your commands would be:
+# git remote add origin https://github.com/gelchrist123/jmonic-dashboard.git
+# git push -u origin main
+# Live URL: https://gelchrist123.github.io/jmonic-dashboard
