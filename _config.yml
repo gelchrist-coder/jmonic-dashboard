@@ -1,0 +1,7 @@
+theme: jekyll-theme-slate
+title: J'MONIC Enterprise
+description: Smart Stock Management Dashboard
+show_downloads: false
+github:
+  is_project_page: true
+  repository_url: https://github.com/gelchrist-coder/jmonic-dashboard
