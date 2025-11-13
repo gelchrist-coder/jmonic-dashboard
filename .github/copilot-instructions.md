@@ -139,9 +139,9 @@ sendResponse([
 ```bash
 # PHP built-in server (recommended for Windows/development)
 cd c:\JMONIC-ENTERPRISE\dashboard
-php -S localhost:8000
+php -S localhost:9000
 
-# Then visit: http://localhost:8000
+# Then visit: http://localhost:9000
 ```
 
 ### Database Setup
@@ -151,20 +151,20 @@ php -S localhost:8000
 php dashboard/check_database.php
 
 # Or use web interface
-http://localhost:8000/dashboard/web_installer.php
+http://localhost:9000/dashboard/web_installer.php
 ```
 
 ### Testing API Endpoints
 
 ```bash
 # Test connection
-curl http://localhost:8000/api/test.php
+curl http://localhost:9000/api/test.php
 
 # Get products
-curl http://localhost:8000/api/products.php
+curl http://localhost:9000/api/products.php
 
 # Create product (requires POST with JSON body)
-curl -X POST http://localhost:8000/api/products.php \
+curl -X POST http://localhost:9000/api/products.php \
   -H "Content-Type: application/json" \
   -d '{"productName":"Hair Oil","sku":"HO001","sellingPrice":50,"costPrice":30,"stockQuantity":100}'
 ```
@@ -242,7 +242,7 @@ if (isNaN(sellingPrice) || sellingPrice <= 0) {
 
 1. **Check browser console** for frontend errors (Ctrl+Shift+I in Chrome)
 2. **Check API responses** - use Network tab to inspect JSON responses
-3. **Database issues** - run `php dashboard/check_database.php` or visit `http://localhost:8000/dashboard/server-status.php`
+3. **Database issues** - run `php dashboard/check_database.php` or visit `http://localhost:9000/dashboard/server-status.php`
 4. **Offline mode** - inspect `localStorage` in DevTools Application tab to see stored data
 5. **CORS errors** - ensure backend is enabled with `CORS_ENABLED = true` in config.php
 

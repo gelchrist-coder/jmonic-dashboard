@@ -65,8 +65,8 @@ Simply visit: [https://gelchrist-coder.github.io/jmonic-dashboard/public/](https
    open public/index.html
    
    # Option B: Local server
-   python3 -m http.server 8000
-   # Then visit: http://localhost:8000/public/
+   python3 -m http.server 9000
+   # Then visit: http://localhost:9000/public/
    ```
 
 ## 🎯 How to Use

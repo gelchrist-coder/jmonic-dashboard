@@ -88,12 +88,12 @@ sudo systemctl enable mysql
 1. **Start your web server** (if using built-in PHP server):
    ```bash
    cd "/Users/gelchristboateng/Documents/J'MONIC ENTERPRISE"
-   php -S localhost:8000
+   php -S localhost:9000
    ```
 
 2. **Test the API connection:**
    ```bash
-   curl http://localhost:8000/api/test.php
+   curl http://localhost:9000/api/test.php
    ```
 
    Expected response:
@@ -144,7 +144,7 @@ You should see these tables:
 
 2. **Open your dashboard:**
    ```
-   http://localhost:8000/public/index.html
+   http://localhost:9000/public/index.html
    ```
 
 3. **Check browser console** for successful API connections.
@@ -211,7 +211,7 @@ You should see these tables:
 
 ## 🚀 Next Steps
 
-1. **Access your dashboard** at http://localhost:8000/public/
+1. **Access your dashboard** at http://localhost:9000/public/
 2. **Add your products** using the Products section
 3. **Start recording sales** through the Sales interface
 4. **Monitor inventory** with real-time stock tracking
